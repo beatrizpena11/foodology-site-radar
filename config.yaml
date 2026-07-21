@@ -8,6 +8,7 @@ ciudad:
   # Caja que cubre CDMX + zona metropolitana relevante (Interlomas, Satelite).
   bbox: { lat_min: 19.20, lat_max: 19.60, lon_min: -99.33, lon_max: -99.02 }
   grid_km: 0.75          # tamano de celda del mapa de demanda
+  scan_km: 3.0           # celda del barrido de huecos (mas grande = mas rapido)
 
 # ---- filtros duros del local (descartan si no cumplen) ----
 filtros:

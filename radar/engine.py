@@ -38,8 +38,10 @@ def recommend_marca(prof, cfg):
             "semana: encaja el formato masivo y accesible.")
 
 
-def discover_gaps(network, provider, cfg, scan_km=1.5, top=25):
+def discover_gaps(network, provider, cfg, scan_km=None, top=25):
     """Barre todo CDMX, calcula demanda vs cobertura y devuelve huecos rankeados."""
+    if scan_km is None:
+        scan_km = cfg["ciudad"].get("scan_km", 3.0)
     bbox = cfg["ciudad"]["bbox"]
     cap = cfg["captacion_km"]
     dm = cfg["demanda"]
