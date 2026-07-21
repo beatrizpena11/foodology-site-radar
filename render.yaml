@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: foodology-site-radar
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --timeout 120
+    envVars:
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false      # se pega en el panel de Render (no en el codigo)
+      - key: INEGI_TOKEN
+        sync: false

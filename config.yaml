@@ -1,0 +1,47 @@
+# ============================================================
+#  Radar de locales - Foodology  |  parametros editables
+#  Cambia numeros aqui; no toques el codigo.
+# ============================================================
+
+ciudad:
+  nombre: "Ciudad de Mexico"
+  # Caja que cubre CDMX + zona metropolitana relevante (Interlomas, Satelite).
+  bbox: { lat_min: 19.20, lat_max: 19.60, lon_min: -99.33, lon_max: -99.02 }
+  grid_km: 0.75          # tamano de celda del mapa de demanda
+
+# ---- filtros duros del local (descartan si no cumplen) ----
+filtros:
+  m2_min: 80
+  m2_max: 200
+  renta_max_m2: 1200     # MXN / m2 / mes
+  adecuaciones_obligatorias: ["gas", "extraccion"]
+
+# ---- radios de captacion por formato (para cobertura y canibalizacion) ----
+captacion_km:
+  dark kitchen: 3.0      # radio de reparto
+  storefront: 1.5        # caminata + reparto local
+  default: 2.0
+
+# ---- pesos del score (suman 100) ----
+pesos:
+  ajuste_m2_renta: 20
+  calidad_zona: 30
+  cobertura_hueco: 30
+  competencia: 10
+  adecuaciones: 10
+
+canibalizacion:
+  modo: "penalizacion"   # "penalizacion" o "excluir"
+  factor_penalizacion: 0.2   # multiplica el score si cae dentro del solape
+  umbral_solape: 0.35        # % de traslape de captacion para marcar canibalizacion
+
+# ---- mezcla del indice de demanda (suman 1.0) ----
+demanda:
+  peso_flotante: 0.45    # empleo alrededor (DENUE) -> gente de oficina
+  peso_negocios: 0.25    # densidad de establecimientos (DENUE)
+  peso_residente: 0.30   # poblacion residente (Censo; 0 si no hay datos)
+
+# ---- reglas de marca sugerida por zona ----
+marca:
+  avocalia_min_ingreso: 0.60   # indice de nivel premium de la zona (0-1)
+  darkkitchen_max_comercial: 0.35  # si la actividad comercial es baja -> dark kitchen

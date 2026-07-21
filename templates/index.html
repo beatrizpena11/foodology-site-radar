@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar de locales — Foodology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <h1>Radar de locales <em>Foodology</em></h1>
+  </div>
+  <div class="meta">
+    <span class="mode mode-{{ modo|replace(' ','') }}">modo {{ modo }}</span>
+    <span class="net-count" id="netCount"></span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Huecos detectados</h2>
+      <p class="sub">Todo CDMX · rankeados por demanda desatendida</p>
+    </div>
+    <ol class="gaps" id="gapList"></ol>
+
+    <div class="panel-head sticky">
+      <h2>Evaluar locales</h2>
+      <p class="sub">Pega uno por linea. Opcional: <code>| m2=120 | renta=150000 | gas=si | extraccion=si</code></p>
+    </div>
+    <textarea id="locInput" placeholder="Av. Ejemplo 100, Roma Norte | m2=120 | renta=140000 | gas=si | extraccion=si
+Otra direccion, Del Valle | m2=95 | renta_m2=1100"></textarea>
+    <button id="scoreBtn">Evaluar y rankear</button>
+    <div class="results" id="results"></div>
+  </section>
+
+  <section class="mapwrap">
+    <div id="map"></div>
+    <div class="legend">
+      <span><i class="sw net"></i>Red propia</span>
+      <span><i class="sw gap"></i>Hueco</span>
+      <span><i class="sw loc"></i>Local evaluado</span>
+      <label class="rings"><input type="checkbox" id="ringsTgl"> cobertura</label>
+    </div>
+  </section>
+</main>
+
+<script>
+window.__NET__ = {{ network|safe }};
+window.__GAPS__ = {{ gaps|safe }};
+window.__CFG__ = {{ cfg|safe }};
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
