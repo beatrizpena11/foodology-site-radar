@@ -1,5 +1,4 @@
 const NET = window.__NET__, GAPS = window.__GAPS__, CFG = window.__CFG__;
-const CAP = {"dark kitchen":3.0,"storefront":1.5,"default":2.0};
 const cls = s => (s||"").replace(/ /g,".");
 
 const map = L.map("map",{zoomControl:true}).setView([19.41,-99.16],11);
@@ -9,12 +8,12 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
 // ---- red propia ----
 const ringLayer = L.layerGroup();
 NET.forEach(p=>{
-  const r=(CAP[(p.tipo||"").toLowerCase()]||CAP.default)*1000;
-  L.circle([p.lat,p.lon],{radius:r,color:"#35C2B1",weight:1,opacity:.25,
-    fillColor:"#35C2B1",fillOpacity:.05}).addTo(ringLayer);
+  const r=(p.radio_km || 3.0)*1000;   // radio real de cobertura del punto
+  L.circle([p.lat,p.lon],{radius:r,color:"#35C2B1",weight:1,opacity:.3,
+    fillColor:"#35C2B1",fillOpacity:.06}).addTo(ringLayer);
   L.circleMarker([p.lat,p.lon],{radius:5,color:"#0E141B",weight:1.5,
     fillColor:"#35C2B1",fillOpacity:1}).addTo(map)
-   .bindPopup(`<b>${p.nombre}</b><br>${p.marca} · ${p.tipo}<br><i>${p.estatus}</i>`);
+   .bindPopup(`<b>${p.nombre}</b><br>${p.marca} · ${p.tipo}<br>cobertura ${p.radio_km} km · <i>${p.estatus}</i>`);
 });
 document.getElementById("ringsTgl").addEventListener("change",e=>{
   e.target.checked?ringLayer.addTo(map):map.removeLayer(ringLayer);
