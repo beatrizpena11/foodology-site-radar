@@ -1,0 +1,25 @@
+{
+  "_nota": "Zonas reales de CDMX con pesos cualitativos 0-1 (no son conteos del Censo). res=densidad residencial, flot=poblacion flotante/oficina, prem=nivel de ingreso/premium. Editable.",
+  "spread_km": 1.4,
+  "anchors": [
+    {"name": "Lomas de Chapultepec", "lat": 19.42494, "lon": -99.21344, "res": 0.80, "flot": 0.55, "prem": 1.00},
+    {"name": "Bosques de las Lomas", "lat": 19.39042, "lon": -99.25500, "res": 0.70, "flot": 0.60, "prem": 1.00},
+    {"name": "Jardines del Pedregal", "lat": 19.32058, "lon": -99.20999, "res": 0.80, "flot": 0.30, "prem": 0.95},
+    {"name": "San Jeronimo Lidice", "lat": 19.32717, "lon": -99.22452, "res": 0.75, "flot": 0.30, "prem": 0.80},
+    {"name": "Interlomas", "lat": 19.39696, "lon": -99.28162, "res": 0.80, "flot": 0.70, "prem": 0.90},
+    {"name": "Tecamachalco", "lat": 19.41932, "lon": -99.23699, "res": 0.80, "flot": 0.40, "prem": 0.95},
+    {"name": "Polanco", "lat": 19.43402, "lon": -99.19560, "res": 0.80, "flot": 0.90, "prem": 1.00},
+    {"name": "Lomas Virreyes", "lat": 19.42522, "lon": -99.20791, "res": 0.70, "flot": 0.60, "prem": 1.00},
+    {"name": "Bosque Real", "lat": 19.43040, "lon": -99.28805, "res": 0.60, "flot": 0.40, "prem": 0.95},
+    {"name": "Reforma (oficinas)", "lat": 19.42700, "lon": -99.16766, "res": 0.50, "flot": 1.00, "prem": 0.85},
+    {"name": "Santa Fe corporativo", "lat": 19.36801, "lon": -99.25939, "res": 0.50, "flot": 1.00, "prem": 0.90},
+    {"name": "WTC / Napoles", "lat": 19.39458, "lon": -99.17366, "res": 0.60, "flot": 0.90, "prem": 0.70},
+    {"name": "Narvarte Poniente", "lat": 19.39239, "lon": -99.15807, "res": 0.80, "flot": 0.70, "prem": 0.60},
+    {"name": "Del Valle", "lat": 19.37972, "lon": -99.16771, "res": 0.85, "flot": 0.80, "prem": 0.75},
+    {"name": "Roma Norte", "lat": 19.41736, "lon": -99.15945, "res": 0.75, "flot": 0.85, "prem": 0.80},
+    {"name": "Condesa", "lat": 19.41498, "lon": -99.17745, "res": 0.70, "flot": 0.85, "prem": 0.85},
+    {"name": "Coyoacan Centro", "lat": 19.34932, "lon": -99.16344, "res": 0.70, "flot": 0.70, "prem": 0.70},
+    {"name": "Lindavista", "lat": 19.50377, "lon": -99.13243, "res": 0.80, "flot": 0.60, "prem": 0.60},
+    {"name": "Ciudad Satelite", "lat": 19.50784, "lon": -99.23348, "res": 0.80, "flot": 0.60, "prem": 0.70}
+  ]
+}

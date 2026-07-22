@@ -114,14 +114,18 @@ class LiveProvider:
             return None
 
     def zone_profile(self, lat, lon, radius_km=1.0):
-        n_rest, premium = self._places(lat, lon, radius_km)
-        dens = min(1.0, n_rest/20.0)
+        from .demand import anchor_demand
+        n_rest, premium_g = self._places(lat, lon, radius_km)
+        dens = min(1.0, n_rest/20.0)              # densidad comercial (Google)
+        a = anchor_demand(lat, lon)               # residencial/oficina/premium (curado)
+        active = max(dens, a["infl"])             # filtro: zona urbana con demanda real
         den = self._denue(lat, lon, radius_km)
         negocios = min(1.0, den["negocios"]/400.0) if den else dens
-        return {"flotante":dens,"negocios":negocios,"residente":0.0,
-                "comercial_activity":dens,"ingreso_premium":premium,
-                "competencia_total":n_rest,"competencia_directa":n_rest,
-                "oficina_share":0.3}
+        return {"flotante": max(a["flot"], dens), "negocios": negocios,
+                "residente": a["res"], "comercial_activity": dens,
+                "ingreso_premium": max(premium_g, a["prem"]),
+                "competencia_total": n_rest, "competencia_directa": n_rest,
+                "oficina_share": 0.3, "_active": active}
 
 
 def get_provider():

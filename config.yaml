@@ -41,6 +41,7 @@ demanda:
   peso_flotante: 0.45    # empleo alrededor (DENUE) -> gente de oficina
   peso_negocios: 0.25    # densidad de establecimientos (DENUE)
   peso_residente: 0.30   # poblacion residente (Censo; 0 si no hay datos)
+  gate_min: 0.12         # filtro anti-bosque: descarta zonas sin actividad urbana
 
 # ---- reglas de marca sugerida por zona ----
 marca:

@@ -58,13 +58,18 @@ def discover_gaps(network, provider, cfg, scan_km=None, top=25):
         demand_raw = (dm["peso_flotante"] * prof["flotante"]
                       + dm["peso_negocios"] * prof["negocios"]
                       + dm["peso_residente"] * prof["residente"])
-        raw.append({"cell": c, "prof": prof, "cov": cov, "demand_raw": demand_raw})
+        # gradiente por cercania real a la demanda -> evita empates en 1.00
+        grad = 0.55 + 0.45 * prof.get("_active", 1.0)
+        raw.append({"cell": c, "prof": prof, "cov": cov,
+                    "demand_raw": demand_raw * grad})
     _save_cache(cache)
 
-    dn = _norm([r["demand_raw"] for r in raw])
-    for r, d in zip(raw, dn):
-        r["demand"] = d
-        r["gap"] = d * (1.0 - r["cov"])   # alta demanda + baja cobertura
+    gate = cfg["demanda"].get("gate_min", 0.12)
+    for r in raw:
+        active = r["prof"].get("_active", 1.0)   # sample no trae _active -> no filtra
+        dem = min(1.0, r["demand_raw"])          # demanda real (sin comprimir)
+        r["demand"] = dem if active >= gate else 0.0   # filtro anti-bosque/pueblo
+        r["gap"] = r["demand"] * (1.0 - r["cov"])   # alta demanda + baja cobertura
 
     raw.sort(key=lambda r: r["gap"], reverse=True)
 
