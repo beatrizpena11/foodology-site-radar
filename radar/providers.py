@@ -50,7 +50,9 @@ class LiveProvider:
     def __init__(self, google_key, inegi_token=None):
         self.gk = google_key
         self.it = (inegi_token or "").strip() or None
-        self.mode = "en vivo" if self.it else "en vivo (Google)"
+        self._inegi_ok = bool(self.it)   # se apaga solo si falla una vez
+        # INEGI cambio su endpoint; hasta repararlo, el modo es Google.
+        self.mode = "en vivo (Google)"
 
     def geocode(self, address):
         u = ("https://maps.googleapis.com/maps/api/geocode/json?address="
@@ -96,14 +98,20 @@ class LiveProvider:
             print("places error:", e); return 0, 0.5
 
     def _denue(self, lat, lon, radius_km):
-        if not self.it: return None
+        if not self.it or not self._inegi_ok:
+            return None
         u = (f"https://www.inegi.org.mx/app/api/denue/v1/consulta/Buscar/todos/"
              f"{lat},{lon}/{int(radius_km*1000)}/{self.it}")
         try:
-            rows = _get_json(u)
-            return {"negocios": len(rows)} if isinstance(rows, list) else None
+            rows = _get_json(u, timeout=6)
+            if isinstance(rows, list):
+                return {"negocios": len(rows)}
+            self._inegi_ok = False   # respuesta rara -> apagar INEGI
+            return None
         except Exception as e:
-            print("denue error (opcional):", e); return None
+            print("denue caido, se desactiva por esta sesion:", e)
+            self._inegi_ok = False   # una sola falla y ya no se vuelve a llamar
+            return None
 
     def zone_profile(self, lat, lon, radius_km=1.0):
         n_rest, premium = self._places(lat, lon, radius_km)

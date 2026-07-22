@@ -45,10 +45,14 @@ _GAPS = None  # cache en memoria
 def gaps():
     global _GAPS
     if _GAPS is None:
-        g, _ = discover_gaps(NETWORK, PROVIDER, CFG, top=25)
-        for z in g:                       # nombra cada hueco (barato)
-            z["nombre"] = PROVIDER.reverse_name(z["lat"], z["lon"])
-        _GAPS = g
+        try:
+            g, _ = discover_gaps(NETWORK, PROVIDER, CFG, top=25)
+            for z in g:                   # nombra cada hueco (barato)
+                z["nombre"] = PROVIDER.reverse_name(z["lat"], z["lon"])
+            _GAPS = g
+        except Exception as e:
+            print("error calculando huecos:", e)
+            _GAPS = []                    # la pagina carga igual (mapa + scoring)
     return _GAPS
 
 @app.route("/")
