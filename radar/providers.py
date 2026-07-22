@@ -69,14 +69,25 @@ class LiveProvider:
 
     def reverse_name(self, lat, lon):
         u = (f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lon}"
-             f"&result_type=neighborhood|sublocality|locality&language=es&key={self.gk}")
+             f"&language=es&key={self.gk}")
+        prefer = ["neighborhood", "sublocality_level_1", "sublocality",
+                  "locality", "administrative_area_level_3",
+                  "administrative_area_level_2"]
         try:
             d = _get_json(u)
-            if d.get("status") == "OK" and d["results"]:
-                for c in d["results"][0].get("address_components", []):
-                    if "neighborhood" in c["types"] or "sublocality" in c["types"]:
-                        return c["long_name"]
-                return d["results"][0].get("formatted_address","")[:40]
+            if d.get("status") == "OK" and d.get("results"):
+                # junta todos los componentes de los primeros resultados
+                comps = []
+                for res in d["results"][:5]:
+                    comps.extend(res.get("address_components", []))
+                for t in prefer:
+                    for c in comps:
+                        if t in c.get("types", []):
+                            return c["long_name"]
+                # ultimo recurso: primera parte de la direccion formateada
+                fa = d["results"][0].get("formatted_address", "")
+                if fa:
+                    return fa.split(",")[0][:40]
         except Exception as e:
             print("reverse error:", e)
         return f"{lat:.3f},{lon:.3f}"

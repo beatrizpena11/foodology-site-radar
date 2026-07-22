@@ -17,11 +17,16 @@ filtros:
   renta_max_m2: 1200     # MXN / m2 / mes
   adecuaciones_obligatorias: ["gas", "extraccion"]
 
-# ---- radios de captacion por formato (para cobertura y canibalizacion) ----
+# ---- radios de captacion (cobertura y canibalizacion) ----
 captacion_km:
-  dark kitchen: 3.0      # radio de reparto
-  storefront: 1.5        # caminata + reparto local
-  default: 2.0
+  default: 3.0           # todos los puntos cubren ~3 km
+turbo:                   # excepciones individuales (turbo = radio menor)
+  "Amsterdam 309": 1.5
+
+# ---- agrupacion de huecos ----
+huecos:
+  top: 7                 # cuantos huecos mostrar
+  agrupar_km: 2.75       # celdas a menos de esta distancia = una sola zona
 
 # ---- pesos del score (suman 100) ----
 pesos:

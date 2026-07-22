@@ -1,7 +1,6 @@
 """Motor del radar: demanda, huecos, marca sugerida y scoring de locales."""
 import os, json, math
-from .geo import (build_grid, coverage_at, overlap_fraction,
-                  catchment_radius, haversine_km)
+from .geo import build_grid, coverage_at, overlap_fraction, haversine_km
 
 CACHE = os.path.join(os.path.dirname(__file__), "..", "cache", "profiles.json")
 
@@ -38,12 +37,14 @@ def recommend_marca(prof, cfg):
             "semana: encaja el formato masivo y accesible.")
 
 
-def discover_gaps(network, provider, cfg, scan_km=None, top=25):
+def discover_gaps(network, provider, cfg, scan_km=None, top=None):
     """Barre todo CDMX, calcula demanda vs cobertura y devuelve huecos rankeados."""
     if scan_km is None:
         scan_km = cfg["ciudad"].get("scan_km", 3.0)
+    if top is None:
+        top = cfg.get("huecos", {}).get("top", 7)
+    agrupar_km = cfg.get("huecos", {}).get("agrupar_km", 2.75)
     bbox = cfg["ciudad"]["bbox"]
-    cap = cfg["captacion_km"]
     dm = cfg["demanda"]
     cells = build_grid(bbox, scan_km)
     cache = _load_cache()
@@ -54,7 +55,7 @@ def discover_gaps(network, provider, cfg, scan_km=None, top=25):
         if prof is None:
             prof = provider.zone_profile(c["lat"], c["lon"], radius_km=scan_km/2)
             cache[key] = prof
-        cov = coverage_at(c["lat"], c["lon"], network, cap)
+        cov = coverage_at(c["lat"], c["lon"], network, cfg)
         demand_raw = (dm["peso_flotante"] * prof["flotante"]
                       + dm["peso_negocios"] * prof["negocios"]
                       + dm["peso_residente"] * prof["residente"])
@@ -81,7 +82,7 @@ def discover_gaps(network, provider, cfg, scan_km=None, top=25):
         placed = False
         for z in zones:
             if haversine_km(r["cell"]["lat"], r["cell"]["lon"],
-                            z["lat"], z["lon"]) < 1.2:
+                            z["lat"], z["lon"]) < agrupar_km:
                 z["members"].append(r); placed = True; break
         if not placed:
             zones.append({"lat": r["cell"]["lat"], "lon": r["cell"]["lon"],
@@ -134,7 +135,7 @@ def _num(v):
 
 
 def score_locales(lines, network, provider, cfg):
-    filt = cfg["filtros"]; pesos = cfg["pesos"]; cap = cfg["captacion_km"]
+    filt = cfg["filtros"]; pesos = cfg["pesos"]
     dm = cfg["demanda"]; canib = cfg["canibalizacion"]
     results = []
     for line in lines:
@@ -162,7 +163,7 @@ def score_locales(lines, network, provider, cfg):
             descartes.append("sin salida de extraccion (obligatorio).")
 
         prof = provider.zone_profile(lat, lon, radius_km=1.0)
-        cov = coverage_at(lat, lon, network, cap)
+        cov = coverage_at(lat, lon, network, cfg)
         # marca sugerida para decidir radio de captacion del candidato
         marca, why = recommend_marca(prof, cfg)
         tipo = "dark kitchen" if marca == "Dark kitchen" else "storefront"
@@ -188,7 +189,7 @@ def score_locales(lines, network, provider, cfg):
                 + pesos["adecuaciones"]*s_adec)  # 0-100
 
         # ---- canibalizacion (penalizacion dura) ----
-        ov = overlap_fraction(lat, lon, tipo, network, cap)
+        ov = overlap_fraction(lat, lon, network, cfg)
         canibaliza = ov >= canib["umbral_solape"]
         if canibaliza:
             if canib["modo"] == "excluir":

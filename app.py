@@ -46,13 +46,23 @@ def gaps():
     global _GAPS
     if _GAPS is None:
         try:
-            g, _ = discover_gaps(NETWORK, PROVIDER, CFG, top=25)
-            for z in g:                   # nombra cada hueco (barato)
+            n = CFG.get("huecos", {}).get("top", 7)
+            g, _ = discover_gaps(NETWORK, PROVIDER, CFG, top=n * 2)  # de sobra
+            for z in g:
                 z["nombre"] = PROVIDER.reverse_name(z["lat"], z["lon"])
-            _GAPS = g
+            # quita zonas repetidas por nombre (deja la de mejor gap) y recorta
+            seen, dedup = set(), []
+            for z in g:
+                key = z["nombre"]
+                if key in seen:
+                    continue
+                seen.add(key); dedup.append(z)
+                if len(dedup) >= n:
+                    break
+            _GAPS = dedup
         except Exception as e:
             print("error calculando huecos:", e)
-            _GAPS = []                    # la pagina carga igual (mapa + scoring)
+            _GAPS = []
     return _GAPS
 
 @app.route("/")
