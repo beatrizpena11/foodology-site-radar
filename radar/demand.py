@@ -30,9 +30,10 @@ def _km(lat1, lon1, lat2, lon2):
 def anchor_demand(lat, lon):
     """Combina las zonas cercanas con peso gaussiano por distancia."""
     wsum = res = flot = prem = infl = 0.0
+    marca = None; best_w = 0.0
     for a in _ANCHORS:
         d = _km(lat, lon, a["lat"], a["lon"])
-        w = math.exp(-(d / _SPREAD) ** 2)      # ~1 en el centro, cae en ~2*spread km
+        w = math.exp(-(d / _SPREAD) ** 2)
         if w < 0.02:
             continue
         wsum += w
@@ -40,6 +41,9 @@ def anchor_demand(lat, lon):
         flot += w * a["flot"]
         prem += w * a["prem"]
         infl = max(infl, w)
+        if w > best_w:                      # marca = zona dominante mas cercana
+            best_w = w; marca = a.get("marca")
     if wsum == 0:
-        return {"res": 0.0, "flot": 0.0, "prem": 0.5, "infl": 0.0}
-    return {"res": res/wsum, "flot": flot/wsum, "prem": prem/wsum, "infl": infl}
+        return {"res": 0.0, "flot": 0.0, "prem": 0.5, "infl": 0.0, "marca": None}
+    return {"res": res/wsum, "flot": flot/wsum, "prem": prem/wsum,
+            "infl": infl, "marca": marca}

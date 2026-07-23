@@ -22,6 +22,9 @@ def _norm(vals):
 
 
 def recommend_marca(prof, cfg):
+    hint = prof.get("marca_hint")
+    if hint:
+        return (hint, "Marca que Foodology define para esta zona (editable en demand_anchors).")
     com = prof["comercial_activity"]; prem = prof["ingreso_premium"]
     m = cfg["marca"]
     if com < m["darkkitchen_max_comercial"]:

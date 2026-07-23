@@ -136,7 +136,8 @@ class LiveProvider:
                 "residente": a["res"], "comercial_activity": dens,
                 "ingreso_premium": max(premium_g, a["prem"]),
                 "competencia_total": n_rest, "competencia_directa": n_rest,
-                "oficina_share": 0.3, "_active": active}
+                "oficina_share": 0.3, "_active": active,
+                "marca_hint": a.get("marca")}
 
 
 def get_provider():
