@@ -85,3 +85,8 @@ button:disabled{opacity:.5;cursor:wait}
   .panel{border-right:0;border-top:1px solid var(--line)}
 }
 @media(prefers-reduced-motion:reduce){.dot{animation:none}}
+
+/* numero de ranking sobre cada hueco */
+.gap-num{background:transparent;border:0;box-shadow:none;color:#1A1206;
+  font-family:"JetBrains Mono",monospace;font-weight:700;font-size:11px}
+.gap-num::before{border:0}

@@ -21,15 +21,18 @@ document.getElementById("ringsTgl").addEventListener("change",e=>{
 document.getElementById("netCount").textContent = NET.length+" puntos propios";
 
 // ---- huecos ----
+// ---- huecos: area de ~3 km (zona), centrada en el punto optimo ----
 const gapMarkers={};
 GAPS.forEach((g,i)=>{
-  const rad = 8 + g.gap*26;
-  const m=L.circleMarker([g.lat,g.lon],{radius:rad,color:"#F2A63B",weight:1.5,
-    fillColor:"#F2A63B",fillOpacity:.28})
+  L.circle([g.lat,g.lon],{radius:3000,color:"#F2A63B",weight:1.5,opacity:.9,
+    fillColor:"#F2A63B",fillOpacity:.12}).addTo(map);
+  const m=L.circleMarker([g.lat,g.lon],{radius:6,color:"#1A1206",weight:1.5,
+    fillColor:"#F2A63B",fillOpacity:1})
     .addTo(map)
     .bindPopup(`<b>#${i+1} · ${g.nombre||"hueco"}</b><br>`+
-      `demanda ${g.demanda} · cobertura ${g.cobertura}<br>`+
+      `punto ideal · demanda ${g.demanda} · cobertura ${g.cobertura}<br>`+
       `<b>Sugerido: ${g.marca_sugerida}</b><br><span style="color:#8695A6">${g.porque}</span>`);
+  m.bindTooltip(`${i+1}`,{permanent:true,direction:"center",className:"gap-num"});
   gapMarkers[i]=m;
 });
 
