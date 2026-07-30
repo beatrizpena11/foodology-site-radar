@@ -225,16 +225,16 @@ def score_locales(lines, network, provider, cfg):
 
 # ==================== MOTOR NACIONAL (por ciudad) ====================
 def _nombre_hueco_nal(lat, lon):
-    """Nombra por zona reconocible (anchors CDMX) o microzona de ordenes; si no, coords."""
+    """Nombra por: 1) zona nombrada cercana, 2) microzona del RAW DATA, 3) coords."""
     from .demand import _ANCHORS
-    best, bd = None, 1.8
+    best, bd = None, 3.0
     for a in _ANCHORS:
         d = haversine_km(lat, lon, a["lat"], a["lon"])
         if d < bd: bd, best = d, a["name"]
     if best: return best
     try:
         from .nacional import nearest_micro
-        m = nearest_micro(lat, lon, 3.0)
+        m = nearest_micro(lat, lon, 3.5)
         if m: return m
     except Exception:
         pass
@@ -289,14 +289,13 @@ def discover_gaps_ciudad(cid, cfg):
         la += step
     cand.sort(key=lambda r: r["s"]["rank"], reverse=True)
     # agrupar en zonas (merge <2.5 km) quedandose con la mejor
+    # cand ya viene ordenado por rank (mejor primero). Cada hueco nuevo que caiga
+    # dentro de 3 km de uno ya elegido se descarta = se fusiona con el mejor.
     zones = []
     for r in cand:
-        placed = False
-        for z in zones:
-            if haversine_km(r["lat"], r["lon"], z["lat"], z["lon"]) < 3.5:
-                placed = True; break
-        if not placed:
-            zones.append(r)
+        if any(haversine_km(r["lat"], r["lon"], z["lat"], z["lon"]) < 3.0 for z in zones):
+            continue
+        zones.append(r)
     out = []
     for z in zones:
         s = z["s"]; nombre = _nombre_hueco_nal(z["lat"], z["lon"])

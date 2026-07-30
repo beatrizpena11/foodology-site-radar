@@ -175,6 +175,141 @@
       "flot": 0.6,
       "prem": 0.7,
       "marca": "Green House"
+    },
+    {
+      "name": "Olivar de los Padres",
+      "lat": 19.3455,
+      "lon": -99.247,
+      "res": 0.6,
+      "flot": 0.4,
+      "prem": 0.75,
+      "marca": "Green House"
+    },
+    {
+      "name": "Iztacalco",
+      "lat": 19.3958,
+      "lon": -99.0975,
+      "res": 0.85,
+      "flot": 0.5,
+      "prem": 0.6,
+      "marca": "Green House"
+    },
+    {
+      "name": "Agricola Oriental",
+      "lat": 19.4014,
+      "lon": -99.068,
+      "res": 0.9,
+      "flot": 0.4,
+      "prem": 0.55,
+      "marca": "Green House"
+    },
+    {
+      "name": "Iztapalapa Centro",
+      "lat": 19.3574,
+      "lon": -99.0678,
+      "res": 0.95,
+      "flot": 0.5,
+      "prem": 0.5,
+      "marca": "Green House"
+    },
+    {
+      "name": "Cabeza de Juarez",
+      "lat": 19.369,
+      "lon": -99.03,
+      "res": 0.9,
+      "flot": 0.4,
+      "prem": 0.5,
+      "marca": "Green House"
+    },
+    {
+      "name": "Aragon (GAM oriente)",
+      "lat": 19.462,
+      "lon": -99.085,
+      "res": 0.85,
+      "flot": 0.4,
+      "prem": 0.55,
+      "marca": "Green House"
+    },
+    {
+      "name": "Lindavista-Zacatenco",
+      "lat": 19.504,
+      "lon": -99.13,
+      "res": 0.8,
+      "flot": 0.6,
+      "prem": 0.6,
+      "marca": "Green House"
+    },
+    {
+      "name": "Santa Fe Sur (Contadero)",
+      "lat": 19.356,
+      "lon": -99.29,
+      "res": 0.6,
+      "flot": 0.7,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Culhuacan",
+      "lat": 19.332,
+      "lon": -99.105,
+      "res": 0.9,
+      "flot": 0.4,
+      "prem": 0.55,
+      "marca": "Green House"
+    },
+    {
+      "name": "Coyoacan Sur (CTM)",
+      "lat": 19.306,
+      "lon": -99.135,
+      "res": 0.9,
+      "flot": 0.4,
+      "prem": 0.6,
+      "marca": "Green House"
+    },
+    {
+      "name": "Jamaica-Viaducto",
+      "lat": 19.414,
+      "lon": -99.11,
+      "res": 0.85,
+      "flot": 0.6,
+      "prem": 0.55,
+      "marca": "Green House"
+    },
+    {
+      "name": "Iztapalapa Oriente",
+      "lat": 19.378,
+      "lon": -99.086,
+      "res": 0.95,
+      "flot": 0.4,
+      "prem": 0.5,
+      "marca": "Green House"
+    },
+    {
+      "name": "San Juan de Aragon",
+      "lat": 19.462,
+      "lon": -99.062,
+      "res": 0.9,
+      "flot": 0.4,
+      "prem": 0.55,
+      "marca": "Green House"
+    },
+    {
+      "name": "Cuautepec (GAM Norte)",
+      "lat": 19.534,
+      "lon": -99.17,
+      "res": 0.85,
+      "flot": 0.3,
+      "prem": 0.5,
+      "marca": "Green House"
+    },
+    {
+      "name": "Tlalpan Centro",
+      "lat": 19.27,
+      "lon": -99.134,
+      "res": 0.8,
+      "flot": 0.5,
+      "prem": 0.65,
+      "marca": "Green House"
     }
   ]
 }
