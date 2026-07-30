@@ -181,57 +181,43 @@ def _num(v):
 
 
 def score_locales(lines, network, provider, cfg):
-    filt = cfg["filtros"]; pesos = cfg["pesos"]
-    dm = cfg["demanda"]; canib = cfg["canibalizacion"]
+    """Evalua SOLO la direccion, con las mismas variables del mapa (score /12):
+    FT (ordenes+poblacion), Nivel (Censo), Restaurantes parecidos, No-canibalizacion,
+    + bono Turbo si hay hub. Detecta la ciudad sola. Sin gas/extraccion/m2/renta."""
+    from . import nacional
     results = []
     for line in lines:
-        if not line.strip(): continue
-        loc = _parse_line(line)
-        geo = provider.geocode(loc["direccion"])
+        addr = line.split("|")[0].strip()   # por si pegan datos extra, tomamos la direccion
+        if not addr:
+            continue
+        geo = provider.geocode(addr)
         if not geo:
-            results.append({"direccion": loc["direccion"], "estado": "no_geolocalizado",
-                            "score": None, "motivos": ["No se pudo ubicar la direccion."]})
+            results.append({"direccion": addr, "estado": "no_geolocalizado",
+                            "score": None, "motivos": ["No se pudo ubicar la dirección."]})
             continue
         lat, lon = geo["lat"], geo["lon"]
-        motivos = []; descartes = []
-
-        # ---- filtros duros ----
-        if loc["m2"] is not None and not (filt["m2_min"] <= loc["m2"] <= filt["m2_max"]):
-            descartes.append(f"m2 fuera de rango ({loc['m2']:.0f}; pide {filt['m2_min']}-{filt['m2_max']}).")
-        renta_m2 = loc["renta_m2"]
-        if renta_m2 is None and loc["renta_total"] and loc["m2"]:
-            renta_m2 = loc["renta_total"] / loc["m2"]
-        if renta_m2 is not None and renta_m2 > filt["renta_max_m2"]:
-            descartes.append(f"renta ${renta_m2:.0f}/m2 supera el tope (${filt['renta_max_m2']}).")
-        if loc["gas"] is False:
-            descartes.append("sin gas (obligatorio).")
-        if loc["extraccion"] is False:
-            descartes.append("sin salida de extraccion (obligatorio).")
-
-        prof = provider.zone_profile(lat, lon, radius_km=1.0)
-        cov = coverage_at(lat, lon, network, cfg)
-        marca, why = recommend_marca(prof, cfg)
-        s = scores12(lat, lon, prof, cov, cfg)
-
-        # ---- canibalizacion dura (opcional excluir) ----
-        ov = overlap_fraction(lat, lon, network, cfg)
-        if ov >= canib["umbral_solape"]:
-            if canib["modo"] == "excluir":
-                descartes.append(f"canibaliza red propia (solape {ov:.0%}).")
-            else:
-                motivos.append(f"Cerca de red propia (solape {ov:.0%}); ver No-canibalizacion.")
-
-        estado = "descartado" if descartes else "candidato"
-        score = None if descartes else s["total"]   # sobre 12
+        # detectar ciudad por bbox
+        cid = None
+        for c, info in nacional.CIUDADES.items():
+            bb = info["bbox"]
+            if bb[0] <= lat <= bb[2] and bb[1] <= lon <= bb[3]:
+                cid = c; break
+        kk = nacional.kitchens_ciudad(cid) if cid else nacional.KITCHENS
+        s = scores12_nal(lat, lon, cid or list(nacional.CIUDADES)[0], kk)
+        marca, why = recommend_marca({"marca_hint": _marca_hint_at(lat, lon),
+                                      "comercial_activity": s["dem"],
+                                      "ingreso_premium": s["nse"]}, cfg)
         results.append({
-            "direccion": geo.get("formatted", loc["direccion"]),
-            "lat": lat, "lon": lon, "estado": estado, "score": score,
+            "direccion": geo.get("formatted", addr), "lat": lat, "lon": lon,
+            "estado": "candidato", "score": s["total"],
             "marca_sugerida": marca, "porque_marca": why,
-            "cobertura": round(cov, 2), "pob": s["pob"], "nse": s["nse"],
-            "competidores": s["competidores"]["lista"],
+            "ciudad": nacional.CIUDADES[cid]["nombre"] if cid else "fuera de ciudades con datos",
+            "cobertura": s["cov"], "pob": s["pob"], "nse": s["nse"], "hub": s["hub"],
+            "neto_pct": net_uncovered_pct_nal(lat, lon, kk),
+            "competidores": s["competidores"],
             "componentes": {"ft": s["ft"], "pop": s["pop"],
                             "comp": s["comp"], "canib": s["canib"]},
-            "motivos": motivos, "descartes": descartes, "url": loc["url"],
+            "motivos": [], "descartes": [],
         })
     results.sort(key=lambda r: (r["score"] is not None, r["score"] or 0), reverse=True)
     return results

@@ -43,11 +43,12 @@ def gaps_ciudad(cid):
             print("error huecos", cid, e); _GAPS[cid] = []
     return _GAPS[cid]
 
-def city_payload(cid):
+def city_payload(cid, with_gaps=True):
     c = nacional.CIUDADES[cid]
     return {"id": cid, "nombre": c["nombre"], "centro": c["centro"],
             "zoom": c["zoom"], "nivel": c["nivel"],
-            "network": net_ciudad(cid), "gaps": gaps_ciudad(cid)}
+            "network": net_ciudad(cid),
+            "gaps": gaps_ciudad(cid) if with_gaps else []}
 
 @app.route("/")
 def index():
@@ -56,7 +57,7 @@ def index():
     return render_template("index.html",
         modo=PROVIDER.mode,
         ciudades=json.dumps(ciudades),
-        ciudad=json.dumps(city_payload(cid)),
+        ciudad=json.dumps(city_payload(cid, with_gaps=False)),
         cfg=json.dumps({"filtros": CFG["filtros"], "pesos": CFG["pesos"]}))
 
 @app.route("/api/ciudad/<cid>")

@@ -22,11 +22,7 @@ CITIES.forEach(c=>{
 });
 sel.addEventListener("change", async e=>{
   sel.disabled=true;
-  try{
-    const r=await fetch("/api/ciudad/"+e.target.value);
-    CITY=await r.json(); renderCity();
-    map.setView(CITY.centro, CITY.zoom);
-  }catch(err){ alert("No pude cargar la ciudad. Reintenta."); }
+  await loadCityData(e.target.value, true);
   sel.disabled=false;
 });
 
@@ -104,7 +100,10 @@ function renderResults(res){
     if(x.componentes){const c=x.componentes;
       comp=`<div class="gwhy" style="margin-top:6px">${pill("FT",c.ft)}${pill("Nivel",c.pop)}${pill("Rest",c.comp)}${pill("NoCan",c.canib)}</div>`;}
     if(x.marca_sugerida) notes+=`<div class="notes"><span class="chip ${cls(x.marca_sugerida)}">${x.marca_sugerida}</span> ${x.porque_marca||""}</div>`;
-    if(x.pob!=null && x.estado==="candidato") notes+=`<div class="notes">población ~${(x.pob||0).toLocaleString()} · restaurantes parecidos: ${(x.competidores&&x.competidores.length)?x.competidores.join(", "):"ninguno cerca"}</div>`;
+    if(x.estado==="candidato"){
+      notes+=`<div class="notes">${x.ciudad||""} · población ~${(x.pob||0).toLocaleString()} · hueco neto ${x.neto_pct}%${x.hub?' · <span class="turbo">⚡Turbo</span>':''}</div>`;
+      notes+=`<div class="notes">restaurantes parecidos: ${(x.competidores&&x.competidores.length)?x.competidores.join(", "):"ninguno cerca"}</div>`;
+    }
     (x.descartes||[]).forEach(d=>notes+=`<div class="notes bad">✕ ${d}</div>`);
     (x.motivos||[]).forEach(m=>notes+=`<div class="notes">· ${m}</div>`);
     card.innerHTML=`<div class="top"><div class="addr">${x.direccion}</div>${head}</div>${comp}${notes}`;
@@ -116,4 +115,15 @@ function renderResults(res){
   if(res.some(x=>x.lat)) box.scrollIntoView({behavior:"smooth"});
 }
 
-renderCity();  // pinta la ciudad inicial
+renderCity();                 // pinta red al instante
+loadCityData(CITY.id, false); // trae los huecos en segundo plano
+
+async function loadCityData(cid, recenter){
+  const sub=document.getElementById("gapSub");
+  sub.textContent="calculando huecos…";
+  try{
+    const r=await fetch("/api/ciudad/"+cid);
+    CITY=await r.json(); renderCity();
+    if(recenter) map.setView(CITY.centro, CITY.zoom);
+  }catch(err){ sub.textContent="No pude calcular los huecos. Recarga."; }
+}
