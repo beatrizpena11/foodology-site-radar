@@ -1,7 +1,11 @@
 """Capa nacional del radar: ciudades, red por ciudad, demanda por ordenes reales,
 hubs Turbo y cobertura por poligono real. Todo desde los datos subidos (sin API)."""
 import os, json, csv, math
-from shapely.geometry import shape, Point
+try:
+    from shapely.geometry import shape, Point
+    _HAS_SHAPELY = True
+except Exception:
+    _HAS_SHAPELY = False
 
 _DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
@@ -89,6 +93,8 @@ def hub_cerca(lat, lon, radius_km=1.5):
 # --- Cobertura por poligono real (map 11) + fallback 3 km ---
 def _load_polys():
     polys = []
+    if not _HAS_SHAPELY:
+        return polys
     p = os.path.join(_DIR, "cobertura_poligonos.csv")
     try:
         for r in csv.DictReader(open(p, encoding="utf-8")):
@@ -104,7 +110,10 @@ def _load_polys():
     return polys
 _POLYS = _load_polys()
 def coverage_at(lat, lon, city_kitchens):
-    pt = Point(lon, lat)
+    if _HAS_SHAPELY and _POLYS:
+        pt = Point(lon, lat)
+    else:
+        pt = None
     for poly in _POLYS:
         try:
             if poly.contains(pt): return 1.0

@@ -282,7 +282,7 @@ def discover_gaps_ciudad(cid, cfg):
             _c = _cat(la, lo); pobn = min(1.0, _c["pob"]/8000.0)
             ftsig = max(dem, pobn)
             cov = nacional.coverage_at(la, lo, kk)
-            if ftsig >= 0.2 and cov < 0.6 and not vetoed(la, lo):
+            if ftsig >= 0.35 and cov < 0.25 and not vetoed(la, lo):
                 s = scores12_nal(la, lo, cid, kk)
                 cand.append({"lat": round(la,5), "lon": round(lo,5), "s": s})
             lo += step
@@ -293,7 +293,7 @@ def discover_gaps_ciudad(cid, cfg):
     for r in cand:
         placed = False
         for z in zones:
-            if haversine_km(r["lat"], r["lon"], z["lat"], z["lon"]) < 2.5:
+            if haversine_km(r["lat"], r["lon"], z["lat"], z["lon"]) < 3.5:
                 placed = True; break
         if not placed:
             zones.append(r)
@@ -310,9 +310,11 @@ def discover_gaps_ciudad(cid, cfg):
                     "neto_pct": net_uncovered_pct_nal(z["lat"], z["lon"], kk),
                     "competidores": s["competidores"],
                     "marca_sugerida": marca, "porque": why})
+    # solo oportunidades reales: score alto y hueco neto grande (poca canibalizacion)
+    out = [z for z in out if z["total"] >= 10 and z["neto_pct"] >= 55]
     # dedup por nombre
     seen, ded = set(), []
-    for z in sorted(out, key=lambda x: x["total"], reverse=True):
+    for z in sorted(out, key=lambda x: (x["total"], x["neto_pct"]), reverse=True):
         if z["nombre"] in seen: continue
         seen.add(z["nombre"]); ded.append(z)
     return ded
