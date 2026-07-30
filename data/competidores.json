@@ -1,0 +1,290 @@
+{
+  "_nota": "Ubicaciones de competidores en CDMX (Google Places, jul-2026). Editable: agrega o quita sucursales.",
+  "competidores": [
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.40943,
+      "lon": -99.17169
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.43116,
+      "lon": -99.1356
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.43116,
+      "lon": -99.18438
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.42547,
+      "lon": -99.16083
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.42938,
+      "lon": -99.15697
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.41537,
+      "lon": -99.16254
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.36956,
+      "lon": -99.17004
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.43323,
+      "lon": -99.18987
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.40626,
+      "lon": -99.17166
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.36929,
+      "lon": -99.18008
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.4261,
+      "lon": -99.17098
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.43168,
+      "lon": -99.18588
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.43039,
+      "lon": -99.21083
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.35997,
+      "lon": -99.1698
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.40211,
+      "lon": -99.15348
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.42871,
+      "lon": -99.16189
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.39544,
+      "lon": -99.18099
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.3845,
+      "lon": -99.08257
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.41944,
+      "lon": -99.16253
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.35919,
+      "lon": -99.27203
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.40971,
+      "lon": -99.17193
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.43284,
+      "lon": -99.20007
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.41997,
+      "lon": -99.17252
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.36859,
+      "lon": -99.18039
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.32411,
+      "lon": -99.13916
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.41254,
+      "lon": -99.18517
+    },
+    {
+      "marca": "Mora Mora",
+      "lat": 19.42736,
+      "lon": -99.2287
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.37419,
+      "lon": -99.1793
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.38763,
+      "lon": -99.17429
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.43358,
+      "lon": -99.1551
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.42279,
+      "lon": -99.1537
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.43948,
+      "lon": -99.20051
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.43444,
+      "lon": -99.14366
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.46986,
+      "lon": -99.18826
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.30697,
+      "lon": -99.16486
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.40611,
+      "lon": -99.11021
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.38257,
+      "lon": -99.14012
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.41109,
+      "lon": -99.10012
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.4545,
+      "lon": -99.21897
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.42821,
+      "lon": -99.16162
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.43354,
+      "lon": -99.13957
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.33734,
+      "lon": -99.23754
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.28114,
+      "lon": -99.17133
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.38422,
+      "lon": -99.08294
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.3563,
+      "lon": -99.16853
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.4859,
+      "lon": -99.13025
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.31365,
+      "lon": -99.21935
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 19.36573,
+      "lon": -99.18181
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.34909,
+      "lon": -99.18922
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.31644,
+      "lon": -99.21246
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.33912,
+      "lon": -99.19306
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 19.3057,
+      "lon": -99.16633
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.30542,
+      "lon": -99.16675
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 19.30374,
+      "lon": -99.19018
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.30741,
+      "lon": -99.21639
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.29454,
+      "lon": -99.15739
+    },
+    {
+      "marca": "Toks",
+      "lat": 19.34518,
+      "lon": -99.17172
+    }
+  ]
+}

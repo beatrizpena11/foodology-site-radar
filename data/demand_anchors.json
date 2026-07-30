@@ -1,25 +1,180 @@
 {
-  "_nota": "Zonas reales de CDMX. res=densidad residencial, flot=poblacion flotante/oficina, prem=nivel de ingreso (0-1). 'marca' = la marca que Foodology pondria en esa zona (Avocalia / Green House / Dark kitchen). Todo editable.",
+  "_nota": "Zonas reales de CDMX. res=densidad residencial, flot=poblacion flotante/oficina, prem=nivel de ingreso (0-1). 'marca' = la marca que Foodology pondria en esa zona (Avocalia / Green House / Dark kitchen). Todo editable. 'veto': true = zona a excluir de recomendaciones (mal delivery, cerrada, etc.).",
   "spread_km": 1.4,
   "anchors": [
-    {"name": "Lomas de Chapultepec", "lat": 19.42494, "lon": -99.21344, "res": 0.80, "flot": 0.55, "prem": 1.00, "marca": "Avocalia"},
-    {"name": "Bosques de las Lomas", "lat": 19.39042, "lon": -99.25500, "res": 0.20, "flot": 0.20, "prem": 1.00, "marca": "Avocalia"},
-    {"name": "Jardines del Pedregal", "lat": 19.32058, "lon": -99.20999, "res": 0.80, "flot": 0.30, "prem": 0.95, "marca": "Avocalia"},
-    {"name": "San Jeronimo Lidice", "lat": 19.32717, "lon": -99.22452, "res": 0.75, "flot": 0.30, "prem": 0.80, "marca": "Avocalia"},
-    {"name": "Interlomas", "lat": 19.39696, "lon": -99.28162, "res": 0.80, "flot": 0.70, "prem": 0.90, "marca": "Green House"},
-    {"name": "Tecamachalco", "lat": 19.41932, "lon": -99.23699, "res": 0.20, "flot": 0.15, "prem": 0.90, "marca": "Avocalia"},
-    {"name": "Polanco", "lat": 19.43402, "lon": -99.19560, "res": 0.80, "flot": 0.90, "prem": 1.00, "marca": "Avocalia"},
-    {"name": "Lomas Virreyes", "lat": 19.42522, "lon": -99.20791, "res": 0.70, "flot": 0.60, "prem": 1.00, "marca": "Avocalia"},
-    {"name": "Bosque Real", "lat": 19.43040, "lon": -99.28805, "res": 0.12, "flot": 0.10, "prem": 0.95, "marca": "Dark kitchen"},
-    {"name": "Reforma (oficinas)", "lat": 19.42700, "lon": -99.16766, "res": 0.50, "flot": 1.00, "prem": 0.85, "marca": "Avocalia"},
-    {"name": "Santa Fe corporativo", "lat": 19.36801, "lon": -99.25939, "res": 0.50, "flot": 1.00, "prem": 0.90, "marca": "Avocalia"},
-    {"name": "WTC / Napoles", "lat": 19.39458, "lon": -99.17366, "res": 0.60, "flot": 0.90, "prem": 0.70, "marca": "Green House"},
-    {"name": "Narvarte Poniente", "lat": 19.39239, "lon": -99.15807, "res": 0.80, "flot": 0.70, "prem": 0.60, "marca": "Green House"},
-    {"name": "Del Valle", "lat": 19.37972, "lon": -99.16771, "res": 0.85, "flot": 0.80, "prem": 0.75, "marca": "Green House"},
-    {"name": "Roma Norte", "lat": 19.41736, "lon": -99.15945, "res": 0.75, "flot": 0.85, "prem": 0.80, "marca": "Avocalia"},
-    {"name": "Condesa", "lat": 19.41498, "lon": -99.17745, "res": 0.70, "flot": 0.85, "prem": 0.85, "marca": "Avocalia"},
-    {"name": "Coyoacan Centro", "lat": 19.34932, "lon": -99.16344, "res": 0.70, "flot": 0.70, "prem": 0.70, "marca": "Green House"},
-    {"name": "Lindavista", "lat": 19.50377, "lon": -99.13243, "res": 0.80, "flot": 0.60, "prem": 0.60, "marca": "Green House"},
-    {"name": "Ciudad Satelite", "lat": 19.50784, "lon": -99.23348, "res": 0.80, "flot": 0.60, "prem": 0.70, "marca": "Green House"}
+    {
+      "name": "Lomas de Chapultepec",
+      "lat": 19.42494,
+      "lon": -99.21344,
+      "res": 0.8,
+      "flot": 0.55,
+      "prem": 1.0,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Bosques de las Lomas",
+      "lat": 19.39042,
+      "lon": -99.255,
+      "res": 0.2,
+      "flot": 0.2,
+      "prem": 1.0,
+      "marca": "Avocalia",
+      "veto": true
+    },
+    {
+      "name": "Jardines del Pedregal",
+      "lat": 19.32058,
+      "lon": -99.20999,
+      "res": 0.8,
+      "flot": 0.3,
+      "prem": 0.95,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "San Jeronimo Lidice",
+      "lat": 19.32717,
+      "lon": -99.22452,
+      "res": 0.75,
+      "flot": 0.3,
+      "prem": 0.8,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Interlomas",
+      "lat": 19.39696,
+      "lon": -99.28162,
+      "res": 0.8,
+      "flot": 0.7,
+      "prem": 0.9,
+      "marca": "Green House"
+    },
+    {
+      "name": "Tecamachalco",
+      "lat": 19.41932,
+      "lon": -99.23699,
+      "res": 0.2,
+      "flot": 0.15,
+      "prem": 0.9,
+      "marca": "Avocalia",
+      "veto": true
+    },
+    {
+      "name": "Polanco",
+      "lat": 19.43402,
+      "lon": -99.1956,
+      "res": 0.8,
+      "flot": 0.9,
+      "prem": 1.0,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Lomas Virreyes",
+      "lat": 19.42522,
+      "lon": -99.20791,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 1.0,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Bosque Real",
+      "lat": 19.4304,
+      "lon": -99.28805,
+      "res": 0.12,
+      "flot": 0.1,
+      "prem": 0.95,
+      "marca": "Dark kitchen",
+      "veto": true
+    },
+    {
+      "name": "Reforma (oficinas)",
+      "lat": 19.427,
+      "lon": -99.16766,
+      "res": 0.5,
+      "flot": 1.0,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Santa Fe corporativo",
+      "lat": 19.36801,
+      "lon": -99.25939,
+      "res": 0.5,
+      "flot": 1.0,
+      "prem": 0.9,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "WTC / Napoles",
+      "lat": 19.39458,
+      "lon": -99.17366,
+      "res": 0.6,
+      "flot": 0.9,
+      "prem": 0.7,
+      "marca": "Green House"
+    },
+    {
+      "name": "Narvarte Poniente",
+      "lat": 19.39239,
+      "lon": -99.15807,
+      "res": 0.8,
+      "flot": 0.7,
+      "prem": 0.6,
+      "marca": "Green House"
+    },
+    {
+      "name": "Del Valle",
+      "lat": 19.37972,
+      "lon": -99.16771,
+      "res": 0.85,
+      "flot": 0.8,
+      "prem": 0.75,
+      "marca": "Green House"
+    },
+    {
+      "name": "Roma Norte",
+      "lat": 19.41736,
+      "lon": -99.15945,
+      "res": 0.75,
+      "flot": 0.85,
+      "prem": 0.8,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Condesa",
+      "lat": 19.41498,
+      "lon": -99.17745,
+      "res": 0.7,
+      "flot": 0.85,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Coyoacan Centro",
+      "lat": 19.34932,
+      "lon": -99.16344,
+      "res": 0.7,
+      "flot": 0.7,
+      "prem": 0.7,
+      "marca": "Green House"
+    },
+    {
+      "name": "Lindavista",
+      "lat": 19.50377,
+      "lon": -99.13243,
+      "res": 0.8,
+      "flot": 0.6,
+      "prem": 0.6,
+      "marca": "Green House"
+    },
+    {
+      "name": "Ciudad Satelite",
+      "lat": 19.50784,
+      "lon": -99.23348,
+      "res": 0.8,
+      "flot": 0.6,
+      "prem": 0.7,
+      "marca": "Green House"
+    }
   ]
 }

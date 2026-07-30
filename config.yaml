@@ -25,7 +25,7 @@ turbo:                   # excepciones individuales (turbo = radio menor)
 
 # ---- agrupacion de huecos ----
 huecos:
-  top: 7                 # cuantos huecos mostrar
+  top: 0                 # 0 = TODOS los huecos encontrados
   agrupar_km: 2.75       # celdas a menos de esta distancia = una sola zona
 
 # ---- pesos del score (suman 100) ----

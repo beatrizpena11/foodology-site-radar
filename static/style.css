@@ -90,3 +90,15 @@ button:disabled{opacity:.5;cursor:wait}
 .gap-num{background:transparent;border:0;box-shadow:none;color:#1A1206;
   font-family:"JetBrains Mono",monospace;font-weight:700;font-size:11px}
 .gap-num::before{border:0}
+
+/* pastillas del score /12 */
+.s12{display:inline-block;font-size:9px;color:var(--muted);background:#0E141B;
+  border:1px solid var(--line);border-radius:5px;padding:1px 5px;margin:2px 3px 0 0;letter-spacing:.02em}
+.s12 b{color:var(--text);margin-right:3px;font-family:"JetBrains Mono",monospace}
+.gscore small{color:var(--muted);font-size:10px}
+
+.city-sel{background:#0E141B;color:var(--text);border:1px solid var(--line);
+  border-radius:8px;padding:5px 9px;font-family:inherit;font-size:13px;margin-right:10px}
+.turbo,.turbo-tag{color:#F2C94C;font-size:11px;font-weight:600}
+.turbo-tag{margin-left:6px}
+.gnet{color:var(--muted);font-size:11px;margin-top:3px}

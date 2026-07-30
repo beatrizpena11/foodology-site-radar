@@ -27,6 +27,15 @@ def _km(lat1, lon1, lat2, lon2):
     a = math.sin(dp/2)**2 + math.cos(p1)*math.cos(p2)*math.sin(dl/2)**2
     return 2*R*math.asin(math.sqrt(a))
 
+def vetoed(lat, lon, radius_km=1.6):
+    """True si el punto cae dentro del radio de una zona con veto operativo
+    (mal delivery, fraccionamiento cerrado, etc.). Editable en demand_anchors.json."""
+    for a in _ANCHORS:
+        if a.get("veto") and _km(lat, lon, a["lat"], a["lon"]) <= radius_km:
+            return True
+    return False
+
+
 def anchor_demand(lat, lon):
     """Combina las zonas cercanas con peso gaussiano por distancia."""
     wsum = res = flot = prem = infl = 0.0

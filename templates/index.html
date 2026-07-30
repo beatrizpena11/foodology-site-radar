@@ -16,6 +16,7 @@
     <h1>Radar de locales <em>Foodology</em></h1>
   </div>
   <div class="meta">
+    <select id="citySel" class="city-sel"></select>
     <span class="mode mode-{{ modo|replace(' ','') }}">modo {{ modo }}</span>
     <span class="net-count" id="netCount"></span>
   </div>
@@ -25,7 +26,7 @@
   <section class="panel">
     <div class="panel-head">
       <h2>Huecos detectados</h2>
-      <p class="sub">Todo CDMX · rankeados por demanda desatendida</p>
+      <p class="sub" id="gapSub">rankeados por score /12</p>
     </div>
     <ol class="gaps" id="gapList"></ol>
 
@@ -51,8 +52,8 @@ Otra direccion, Del Valle | m2=95 | renta_m2=1100"></textarea>
 </main>
 
 <script>
-window.__NET__ = {{ network|safe }};
-window.__GAPS__ = {{ gaps|safe }};
+window.__CITIES__ = {{ ciudades|safe }};
+window.__CITY__ = {{ ciudad|safe }};
 window.__CFG__ = {{ cfg|safe }};
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

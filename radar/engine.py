@@ -1,6 +1,8 @@
 """Motor del radar: demanda, huecos, marca sugerida y scoring de locales."""
 import os, json, math
 from .geo import build_grid, coverage_at, overlap_fraction, haversine_km
+from .censo import census_at
+from .competidores import competitors_near
 
 CACHE = os.path.join(os.path.dirname(__file__), "..", "cache", "profiles.json")
 
@@ -25,6 +27,12 @@ def recommend_marca(prof, cfg):
     hint = prof.get("marca_hint")
     if hint:
         return (hint, "Marca que Foodology define para esta zona (editable en demand_anchors).")
+    prem = prof.get("ingreso_premium", 0.5)
+    if prem >= 0.75:
+        return ("Avocalia", "Zona de nivel alto.")
+    if prem >= 0.55:
+        return ("Green House", "Zona de nivel medio.")
+    return ("Dark kitchen", "Zona de nivel bajo: mejor solo delivery.")
     com = prof["comercial_activity"]; prem = prof["ingreso_premium"]
     m = cfg["marca"]
     if com < m["darkkitchen_max_comercial"]:
@@ -38,6 +46,40 @@ def recommend_marca(prof, cfg):
     return ("Green House",
             "Zona comercial de perfil medio con fuerte flujo de oficina entre "
             "semana: encaja el formato masivo y accesible.")
+
+
+def net_uncovered_pct(lat, lon, network, cfg, radius_km=3.0, n=240):
+    """% del área del hueco (~3 km) que NO cubre tu red actual (hueco neto).
+    Descuenta lo que ya alcanza una cocina existente."""
+    import random
+    unc = 0
+    for _ in range(n):
+        ang = random.random() * 2 * math.pi
+        rr = radius_km * math.sqrt(random.random())
+        dlat = rr / 111.0 * math.cos(ang)
+        dlon = rr / (111.0 * math.cos(math.radians(lat))) * math.sin(ang)
+        if coverage_at(lat + dlat, lon + dlon, network, cfg) < 0.2:
+            unc += 1
+    return round(100 * unc / n)
+
+
+def scores12(lat, lon, prof, cov, cfg):
+    """Score estilo /12 = Foot Traffic + Poblacion/Nivel + Competencia + No-canibalizacion.
+    Cada componente 1-3. Datos reales: nivel del Censo, competencia de sucursales."""
+    # Foot Traffic (actividad/demanda diurna) 1-3
+    act = max(prof.get("comercial_activity", 0.0), prof.get("flotante", 0.0))
+    ft = 3 if act >= 0.5 else (2 if act >= 0.2 else 1)
+    # Poblacion / nivel socioeconomico real (Censo) 1-3
+    cen = census_at(lat, lon)
+    estrato = cen["estrato"] or 1
+    # Competencia cercana: presencia valida la demanda 1-3
+    ci = competitors_near(lat, lon)
+    comp = 3 if ci["marcas"] >= 2 else (2 if ci["marcas"] == 1 else 1)
+    # No-canibalizacion 1-3 (3 = sin traslape con red propia)
+    nc = 3 if cov < 0.15 else (2 if cov < 0.5 else 1)
+    total = ft + estrato + comp + nc
+    return {"ft": ft, "pop": estrato, "comp": comp, "canib": nc, "total": total,
+            "pob": cen["pob"], "nse": cen["nse"], "competidores": ci}
 
 
 def discover_gaps(network, provider, cfg, scan_km=None, top=None):
@@ -71,17 +113,21 @@ def discover_gaps(network, provider, cfg, scan_km=None, top=None):
     gate = cfg["demanda"].get("gate_min", 0.12)
     for r in raw:
         active = r["prof"].get("_active", 1.0)   # sample no trae _active -> no filtra
-        dem = min(1.0, r["demand_raw"])          # demanda real (sin comprimir)
+        dem = min(1.0, r["demand_raw"])
         r["demand"] = dem if active >= gate else 0.0   # filtro anti-bosque/pueblo
-        r["gap"] = r["demand"] * (1.0 - r["cov"])   # alta demanda + baja cobertura
+        r["gap"] = r["demand"] * (1.0 - r["cov"])
 
-    raw.sort(key=lambda r: r["gap"], reverse=True)
+    # candidatas que pasan el filtro anti-bosque; se puntuan /12
+    from .demand import vetoed
+    cand = [r for r in raw if r["demand"] > 0 and r["gap"] >= 0.05
+            and not vetoed(r["cell"]["lat"], r["cell"]["lon"])]
+    for r in cand:
+        r["s12"] = scores12(r["cell"]["lat"], r["cell"]["lon"], r["prof"], r["cov"], cfg)
+    cand.sort(key=lambda r: (r["s12"]["total"], r["gap"]), reverse=True)
 
-    # agrupa celdas-hueco contiguas en zonas (merge greedy <1.2 km)
+    # agrupa celdas-hueco vecinas en zonas grandes
     zones = []
-    for r in raw:
-        if r["gap"] < 0.12:  # ignora ruido de baja demanda
-            continue
+    for r in cand:
         placed = False
         for z in zones:
             if haversine_km(r["cell"]["lat"], r["cell"]["lon"],
@@ -90,28 +136,25 @@ def discover_gaps(network, provider, cfg, scan_km=None, top=None):
         if not placed:
             zones.append({"lat": r["cell"]["lat"], "lon": r["cell"]["lon"],
                           "members": [r]})
-        if len(zones) >= top * 2:
-            pass
 
     out = []
     for z in zones:
-        best = max(z["members"], key=lambda r: r["gap"])
-        prof = best["prof"]
+        best = max(z["members"], key=lambda r: r["s12"]["total"])
+        prof = best["prof"]; s = best["s12"]
         marca, why = recommend_marca(prof, cfg)
+        la, lo = round(best["cell"]["lat"], 5), round(best["cell"]["lon"], 5)
         out.append({
-            "lat": round(best["cell"]["lat"], 5),
-            "lon": round(best["cell"]["lon"], 5),
-            "gap": round(best["gap"], 3),
-            "demanda": round(best["demand"], 3),
-            "cobertura": round(best["cov"], 3),
-            "flotante": round(prof["flotante"], 2),
-            "residente": round(prof["residente"], 2),
-            "premium": round(prof["ingreso_premium"], 2),
-            "marca_sugerida": marca, "porque": why,
-            "nombre": None,  # se rellena con reverse_name en la app (barato)
+            "lat": la, "lon": lo,
+            "total": s["total"], "ft": s["ft"], "pop": s["pop"],
+            "comp": s["comp"], "canib": s["canib"],
+            "pob": s["pob"], "nse": s["nse"],
+            "competidores": s["competidores"]["lista"],
+            "cobertura": round(best["cov"], 2), "gap": round(best["gap"], 3),
+            "neto_pct": net_uncovered_pct(la, lo, network, cfg),
+            "marca_sugerida": marca, "porque": why, "nombre": None,
         })
-    out.sort(key=lambda z: z["gap"], reverse=True)
-    return out[:top], raw
+    out.sort(key=lambda z: z["total"], reverse=True)
+    return (out if (top is None or top <= 0) else out[:top]), raw
 
 
 # ---------------- scoring de locales pegados ----------------
@@ -167,51 +210,141 @@ def score_locales(lines, network, provider, cfg):
 
         prof = provider.zone_profile(lat, lon, radius_km=1.0)
         cov = coverage_at(lat, lon, network, cfg)
-        # marca sugerida para decidir radio de captacion del candidato
         marca, why = recommend_marca(prof, cfg)
-        tipo = "dark kitchen" if marca == "Dark kitchen" else "storefront"
+        s = scores12(lat, lon, prof, cov, cfg)
 
-        # ---- componentes 0-1 ----
-        # ajuste m2/renta: mejor si renta baja y tamano medio; neutral si faltan datos
-        if renta_m2 is not None:
-            s_renta = max(0.0, min(1.0, 1 - renta_m2 / filt["renta_max_m2"]))
-        else:
-            s_renta = 0.5; motivos.append("Sin renta -> componente m2/renta en neutral.")
-        s_zona = (dm["peso_flotante"]*prof["flotante"] + dm["peso_negocios"]*prof["negocios"]
-                  + dm["peso_residente"]*prof["residente"])
-        s_hueco = 1.0 - cov
-        # competencia: algo de competencia es bueno (valida demanda), saturacion penaliza
-        ct = prof["competencia_total"]
-        s_comp = math.exp(-((ct - 15) ** 2) / (2 * 18 ** 2))  # optimo ~15 restaurantes
-        # adecuaciones: gas/extraccion ya son filtro; aqui viabilidad restante
-        s_adec = 0.7
-        if loc["gas"] and loc["extraccion"]: s_adec = 0.9
-
-        base = (pesos["ajuste_m2_renta"]*s_renta + pesos["calidad_zona"]*s_zona
-                + pesos["cobertura_hueco"]*s_hueco + pesos["competencia"]*s_comp
-                + pesos["adecuaciones"]*s_adec)  # 0-100
-
-        # ---- canibalizacion (penalizacion dura) ----
+        # ---- canibalizacion dura (opcional excluir) ----
         ov = overlap_fraction(lat, lon, network, cfg)
-        canibaliza = ov >= canib["umbral_solape"]
-        if canibaliza:
+        if ov >= canib["umbral_solape"]:
             if canib["modo"] == "excluir":
                 descartes.append(f"canibaliza red propia (solape {ov:.0%}).")
             else:
-                base *= canib["factor_penalizacion"]
-                motivos.append(f"Penalizado por canibalizacion (solape {ov:.0%} con red propia).")
+                motivos.append(f"Cerca de red propia (solape {ov:.0%}); ver No-canibalizacion.")
 
         estado = "descartado" if descartes else "candidato"
-        score = None if descartes else round(base, 1)
+        score = None if descartes else s["total"]   # sobre 12
         results.append({
             "direccion": geo.get("formatted", loc["direccion"]),
             "lat": lat, "lon": lon, "estado": estado, "score": score,
             "marca_sugerida": marca, "porque_marca": why,
-            "cobertura": round(cov, 2), "demanda": round(s_zona, 2),
-            "componentes": {"m2_renta": round(s_renta,2), "zona": round(s_zona,2),
-                            "hueco": round(s_hueco,2), "competencia": round(s_comp,2),
-                            "adecuaciones": round(s_adec,2)},
+            "cobertura": round(cov, 2), "pob": s["pob"], "nse": s["nse"],
+            "competidores": s["competidores"]["lista"],
+            "componentes": {"ft": s["ft"], "pop": s["pop"],
+                            "comp": s["comp"], "canib": s["canib"]},
             "motivos": motivos, "descartes": descartes, "url": loc["url"],
         })
     results.sort(key=lambda r: (r["score"] is not None, r["score"] or 0), reverse=True)
     return results
+
+
+# ==================== MOTOR NACIONAL (por ciudad) ====================
+def _nombre_hueco_nal(lat, lon):
+    """Nombra por zona reconocible (anchors CDMX) o microzona de ordenes; si no, coords."""
+    from .demand import _ANCHORS
+    best, bd = None, 1.8
+    for a in _ANCHORS:
+        d = haversine_km(lat, lon, a["lat"], a["lon"])
+        if d < bd: bd, best = d, a["name"]
+    if best: return best
+    try:
+        from .nacional import nearest_micro
+        m = nearest_micro(lat, lon, 3.0)
+        if m: return m
+    except Exception:
+        pass
+    return f"{lat:.3f},{lon:.3f}"
+
+def scores12_nal(lat, lon, cid, city_kitchens):
+    """Score /12 nacional: FT(ordenes) + Nivel(censo) + Parecidos + No-canib, + bono hub."""
+    from . import nacional
+    from .censo import census_at
+    from .competidores import competitors_near
+    # FT = demanda de mercado: max(ordenes reales, poblacion residente)
+    dem = nacional.order_demand_at(lat, lon, cid)
+    cen = census_at(lat, lon)
+    pob_norm = min(1.0, cen["pob"]/8000.0)
+    ftsig = max(dem, pob_norm)
+    ft = 3 if ftsig >= 0.5 else (2 if ftsig >= 0.2 else 1)
+    niv = cen["estrato"] or 1
+    # Restaurantes parecidos (valida que la zona pide comida)
+    ci = competitors_near(lat, lon)
+    par = 3 if ci["marcas"] >= 2 else (2 if ci["marcas"] == 1 else 1)
+    # Cobertura (poligono real o 3 km) -> No-canibalizacion
+    cov = nacional.coverage_at(lat, lon, city_kitchens)
+    nc = 3 if cov < 0.15 else (2 if cov < 0.5 else 1)
+    # Hub Turbo cercano -> bono chico + etiqueta
+    hub = nacional.hub_cerca(lat, lon)
+    total = ft + niv + par + nc
+    rank = total + (0.5 if hub else 0)
+    return {"ft": ft, "pop": niv, "comp": par, "canib": nc, "total": total,
+            "rank": rank, "hub": hub, "dem": round(dem, 2), "cov": round(cov, 2),
+            "pob": cen["pob"], "nse": cen["nse"], "competidores": ci["lista"]}
+
+def discover_gaps_ciudad(cid, cfg):
+    from . import nacional
+    from .demand import vetoed
+    c = nacional.CIUDADES[cid]; bb = c["bbox"]
+    kk = nacional.kitchens_ciudad(cid)
+    step = 0.012  # ~1.3 km
+    cand = []
+    la = bb[0]
+    while la <= bb[2]:
+        lo = bb[1]
+        while lo <= bb[3]:
+            from .censo import census_at as _cat
+            dem = nacional.order_demand_at(la, lo, cid)
+            _c = _cat(la, lo); pobn = min(1.0, _c["pob"]/8000.0)
+            ftsig = max(dem, pobn)
+            cov = nacional.coverage_at(la, lo, kk)
+            if ftsig >= 0.2 and cov < 0.6 and not vetoed(la, lo):
+                s = scores12_nal(la, lo, cid, kk)
+                cand.append({"lat": round(la,5), "lon": round(lo,5), "s": s})
+            lo += step
+        la += step
+    cand.sort(key=lambda r: r["s"]["rank"], reverse=True)
+    # agrupar en zonas (merge <2.5 km) quedandose con la mejor
+    zones = []
+    for r in cand:
+        placed = False
+        for z in zones:
+            if haversine_km(r["lat"], r["lon"], z["lat"], z["lon"]) < 2.5:
+                placed = True; break
+        if not placed:
+            zones.append(r)
+    out = []
+    for z in zones:
+        s = z["s"]; nombre = _nombre_hueco_nal(z["lat"], z["lon"])
+        marca, why = recommend_marca({"marca_hint": _marca_hint_at(z["lat"], z["lon"]),
+                                      "comercial_activity": s["dem"],
+                                      "ingreso_premium": s["nse"]}, cfg)
+        out.append({"lat": z["lat"], "lon": z["lon"], "nombre": nombre,
+                    "total": s["total"], "ft": s["ft"], "pop": s["pop"],
+                    "comp": s["comp"], "canib": s["canib"], "hub": s["hub"],
+                    "pob": s["pob"], "nse": s["nse"], "cobertura": s["cov"],
+                    "neto_pct": net_uncovered_pct_nal(z["lat"], z["lon"], kk),
+                    "competidores": s["competidores"],
+                    "marca_sugerida": marca, "porque": why})
+    # dedup por nombre
+    seen, ded = set(), []
+    for z in sorted(out, key=lambda x: x["total"], reverse=True):
+        if z["nombre"] in seen: continue
+        seen.add(z["nombre"]); ded.append(z)
+    return ded
+
+def _marca_hint_at(lat, lon):
+    from .demand import _ANCHORS
+    best, bd = None, 1.8
+    for a in _ANCHORS:
+        d = haversine_km(lat, lon, a["lat"], a["lon"])
+        if d < bd: bd, best = d, a.get("marca")
+    return best
+
+def net_uncovered_pct_nal(lat, lon, city_kitchens, radius_km=3.0, n=200):
+    from . import nacional
+    import random
+    unc = 0
+    for _ in range(n):
+        ang = random.random()*2*math.pi; rr = radius_km*math.sqrt(random.random())
+        dlat = rr/111.0*math.cos(ang); dlon = rr/(111.0*math.cos(math.radians(lat)))*math.sin(ang)
+        if nacional.coverage_at(lat+dlat, lon+dlon, city_kitchens) < 0.2: unc += 1
+    return round(100*unc/n)
