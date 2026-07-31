@@ -1,5 +1,6 @@
 const CITIES = window.__CITIES__, CFG = window.__CFG__;
 let CITY = window.__CITY__;
+let MODO = (CITY && CITY.modo) || 'delivery';
 const cls = s => (s||"").replace(/ /g,".");
 const pill = (lbl,v)=>`<span class="s12"><b>${v}</b>${lbl}</span>`;
 const breakdown = g => pill("FT",g.ft)+pill("Nivel",g.pop)+pill("Rest",g.comp)+pill("NoCan",g.canib);
@@ -115,6 +116,15 @@ function renderResults(res){
   if(res.some(x=>x.lat)) box.scrollIntoView({behavior:"smooth"});
 }
 
+// switch de modo
+document.querySelectorAll("#modoSwitch button").forEach(b=>{
+  b.addEventListener("click", async ()=>{
+    if(b.classList.contains("on")) return;
+    document.querySelectorAll("#modoSwitch button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); MODO=b.dataset.modo;
+    await loadCityData(CITY.id, false);
+  });
+});
 renderCity();                 // pinta red al instante
 loadCityData(CITY.id, false); // trae los huecos en segundo plano
 
@@ -122,7 +132,7 @@ async function loadCityData(cid, recenter){
   const sub=document.getElementById("gapSub");
   sub.textContent="calculando huecos…";
   try{
-    const r=await fetch("/api/ciudad/"+cid);
+    const r=await fetch("/api/ciudad/"+cid+"?modo="+MODO);
     CITY=await r.json(); renderCity();
     if(recenter) map.setView(CITY.centro, CITY.zoom);
   }catch(err){ sub.textContent="No pude calcular los huecos. Recarga."; }

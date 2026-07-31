@@ -36,8 +36,9 @@ def _load_kitchens():
         ciudad = None
         for cid, c in CIUDADES.items():
             if _in_bbox(lat, lon, c["bbox"]): ciudad = cid; break
+        radio = 1.5 if "AMSTERDAM" in nombre.upper() or "309" in nombre else 4.0
         out.append({"nombre": nombre, "lat": lat, "lon": lon, "ciudad": ciudad,
-                    "radio_km": 1.5 if "AMSTERDAM" in nombre.upper() or "309" in nombre else 3.0})
+                    "radio_km": radio, "poly": None})
     return out
 KITCHENS = _load_kitchens()
 def kitchens_ciudad(cid): return [k for k in KITCHENS if k["ciudad"] == cid]
@@ -109,16 +110,33 @@ def _load_polys():
         pass
     return polys
 _POLYS = _load_polys()
+
+def _match_polys_to_kitchens():
+    """Asigna a cada cocina el poligono real cuyo punto-tienda este a <0.8 km."""
+    if not _HAS_SHAPELY:
+        return
+    pts = []  # (lat, lon, geom) del punto de cada poligono
+    p = os.path.join(_DIR, "cobertura_poligonos.csv")
+    try:
+        for r in csv.DictReader(open(p, encoding="utf-8")):
+            gj = r.get("_geojson")
+            if not gj: continue
+            try:
+                feat = json.loads(gj)
+                pts.append((float(feat["properties"]["STORE_LAT"]),
+                            float(feat["properties"]["STORE_LNG"]),
+                            shape(feat["geometry"])))
+            except Exception:
+                pass
+    except Exception:
+        return
+    for k in KITCHENS:
+        best, bd = None, 0.8
+        for (la, lo, geom) in pts:
+            d = _km(k["lat"], k["lon"], la, lo)
+            if d < bd: bd, best = d, geom
+        k["poly"] = best
 def coverage_at(lat, lon, city_kitchens):
-    if _HAS_SHAPELY and _POLYS:
-        pt = Point(lon, lat)
-    else:
-        pt = None
-    for poly in _POLYS:
-        try:
-            if poly.contains(pt): return 1.0
-        except Exception:
-            pass
     cov = 0.0
     for k in city_kitchens:
         d = _km(lat, lon, k["lat"], k["lon"])
@@ -133,4 +151,7 @@ def nearest_micro(lat, lon, radius_km=1.6):
         if not o.get("micro"): continue
         d = _km(lat, lon, o["lat"], o["lon"])
         if d < bd: bd, best = d, o["micro"]
+    if best:
+        import re
+        best = re.sub(r"^(CDMX|GDL|MTY)\s*\d*\s*", "", best).strip()  # quita prefijo operativo
     return best

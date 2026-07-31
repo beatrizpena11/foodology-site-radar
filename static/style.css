@@ -102,3 +102,7 @@ button:disabled{opacity:.5;cursor:wait}
 .turbo,.turbo-tag{color:#F2C94C;font-size:11px;font-weight:600}
 .turbo-tag{margin-left:6px}
 .gnet{color:var(--muted);font-size:11px;margin-top:3px}
+
+.modo-switch{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:10px}
+.modo-switch button{background:#0E141B;color:var(--muted);border:0;padding:5px 11px;font-family:inherit;font-size:12px;cursor:pointer}
+.modo-switch button.on{background:#F2A63B;color:#1A1206;font-weight:600}

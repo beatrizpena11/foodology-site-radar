@@ -22,7 +22,7 @@ def load_cfg():
 
 CFG = load_cfg()
 PROVIDER = get_provider()
-_GAPS = {}   # cache por ciudad
+_GAPS = {}   # cache por (ciudad, modo)
 
 def ciudad_default():
     return list(nacional.CIUDADES.keys())[0]
@@ -35,20 +35,21 @@ def net_ciudad(cid):
                     "radio_km": k["radio_km"]})
     return out
 
-def gaps_ciudad(cid):
-    if cid not in _GAPS:
+def gaps_ciudad(cid, modo="delivery"):
+    key = (cid, modo)
+    if key not in _GAPS:
         try:
-            _GAPS[cid] = discover_gaps_ciudad(cid, CFG)
+            _GAPS[key] = discover_gaps_ciudad(cid, CFG, modo)
         except Exception as e:
-            print("error huecos", cid, e); _GAPS[cid] = []
-    return _GAPS[cid]
+            print("error huecos", cid, modo, e); _GAPS[key] = []
+    return _GAPS[key]
 
-def city_payload(cid, with_gaps=True):
+def city_payload(cid, with_gaps=True, modo="delivery"):
     c = nacional.CIUDADES[cid]
     return {"id": cid, "nombre": c["nombre"], "centro": c["centro"],
-            "zoom": c["zoom"], "nivel": c["nivel"],
+            "zoom": c["zoom"], "nivel": c["nivel"], "modo": modo,
             "network": net_ciudad(cid),
-            "gaps": gaps_ciudad(cid) if with_gaps else []}
+            "gaps": gaps_ciudad(cid, modo) if with_gaps else []}
 
 @app.route("/")
 def index():
@@ -64,7 +65,9 @@ def index():
 def api_ciudad(cid):
     if cid not in nacional.CIUDADES:
         return jsonify({"error": "ciudad desconocida"}), 404
-    return jsonify(city_payload(cid))
+    modo = request.args.get("modo", "delivery")
+    if modo not in ("delivery", "fisico"): modo = "delivery"
+    return jsonify(city_payload(cid, modo=modo))
 
 @app.route("/api/score", methods=["POST"])
 def api_score():

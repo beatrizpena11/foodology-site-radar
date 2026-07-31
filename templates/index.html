@@ -17,6 +17,10 @@
   </div>
   <div class="meta">
     <select id="citySel" class="city-sel"></select>
+    <div class="modo-switch" id="modoSwitch">
+      <button data-modo="delivery" class="on">Delivery</button>
+      <button data-modo="fisico">Punto físico</button>
+    </div>
     <span class="mode mode-{{ modo|replace(' ','') }}">modo {{ modo }}</span>
     <span class="net-count" id="netCount"></span>
   </div>
