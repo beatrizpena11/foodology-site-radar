@@ -285,6 +285,31 @@
       "marca": "Toks",
       "lat": 19.34518,
       "lon": -99.17172
+    },
+    {
+      "marca": "Toks",
+      "lat": 20.65522,
+      "lon": -103.42332
+    },
+    {
+      "marca": "Toks",
+      "lat": 20.69067,
+      "lon": -103.41463
+    },
+    {
+      "marca": "Sushi Itto",
+      "lat": 20.71171,
+      "lon": -103.37928
+    },
+    {
+      "marca": "Ojo de Agua",
+      "lat": 20.69939,
+      "lon": -103.38524
+    },
+    {
+      "marca": "Green Grass",
+      "lat": 20.64794,
+      "lon": -103.32073
     }
   ]
 }

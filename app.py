@@ -35,11 +35,24 @@ def net_ciudad(cid):
                     "radio_km": k["radio_km"]})
     return out
 
+def _es_coord(nombre):
+    return bool(nombre) and (nombre[0].isdigit() or nombre[0] == "-") and "," in nombre
+
 def gaps_ciudad(cid, modo="delivery"):
     key = (cid, modo)
     if key not in _GAPS:
         try:
-            _GAPS[key] = discover_gaps_ciudad(cid, CFG, modo)
+            g = discover_gaps_ciudad(cid, CFG, modo)
+            # nombrar con colonia real (Google) los que quedaron en coordenadas
+            for z in g:
+                if _es_coord(z.get("nombre", "")):
+                    try:
+                        nm = PROVIDER.reverse_name(z["lat"], z["lon"])
+                        if nm and not _es_coord(nm):
+                            z["nombre"] = nm
+                    except Exception as e:
+                        print("reverse name error:", e)
+            _GAPS[key] = g
         except Exception as e:
             print("error huecos", cid, modo, e); _GAPS[key] = []
     return _GAPS[key]

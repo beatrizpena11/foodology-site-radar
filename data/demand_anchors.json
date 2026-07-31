@@ -310,6 +310,105 @@
       "flot": 0.5,
       "prem": 0.65,
       "marca": "Green House"
+    },
+    {
+      "name": "Providencia",
+      "lat": 20.7,
+      "lon": -103.385,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Chapalita",
+      "lat": 20.665,
+      "lon": -103.405,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Green House"
+    },
+    {
+      "name": "Andares / Puerta de Hierro",
+      "lat": 20.71,
+      "lon": -103.415,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Country Club",
+      "lat": 20.69,
+      "lon": -103.365,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Colinas de San Javier",
+      "lat": 20.705,
+      "lon": -103.375,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Americana / Lafayette",
+      "lat": 20.675,
+      "lon": -103.372,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Ciudad del Sol",
+      "lat": 20.655,
+      "lon": -103.405,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Green House"
+    },
+    {
+      "name": "Valle Real",
+      "lat": 20.725,
+      "lon": -103.43,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Avocalia"
+    },
+    {
+      "name": "Jardines del Bosque",
+      "lat": 20.662,
+      "lon": -103.382,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Green House"
+    },
+    {
+      "name": "Zapopan Centro",
+      "lat": 20.72,
+      "lon": -103.39,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Green House"
+    },
+    {
+      "name": "Ciudad Granja",
+      "lat": 20.69,
+      "lon": -103.44,
+      "res": 0.7,
+      "flot": 0.6,
+      "prem": 0.85,
+      "marca": "Green House"
     }
   ]
 }

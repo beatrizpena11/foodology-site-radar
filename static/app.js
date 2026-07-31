@@ -56,15 +56,19 @@ function renderCity(){
       .bindPopup(`<b>#${i+1} · ${g.nombre}</b> — <b>${g.total}/12</b><br>`+
         `FT ${g.ft} · Nivel ${g.pop} · Rest.parecidos ${g.comp} · NoCanib ${g.canib}<br>`+
         `población ~${(g.pob||0).toLocaleString()} · cobertura ${g.cobertura} · <b>hueco neto ${g.neto_pct}%</b><br>`+
-        `restaurantes parecidos: ${comp}${turbo}<br><b>Sugerido: ${g.marca_sugerida}</b>`);
+        `restaurantes parecidos: ${comp}${turbo}<br><b>Sugerido: ${g.marca_sugerida}</b>`+
+        ((g.alternativas&&g.alternativas.length)?`<br><span style="color:#F2C94C">⚄ Se canibaliza con: ${g.alternativas.join(", ")} (elige una)</span>`:""));
     m.bindTooltip(`${i+1}`,{permanent:true,direction:"center",className:"gap-num"});
     gapMarkers[i]=m;
 
+    const altTxt = (g.alternativas && g.alternativas.length)
+      ? `<div class="alt">⚄ alternativa de: ${g.alternativas.join(", ")} — <b>elige una</b></div>` : "";
+    const grpTag = g.grupo ? `<span class="grp grp-${g.grupo%6}">grupo ${g.grupo}</span>` : "";
     const li=document.createElement("li");
     li.innerHTML=`<span class="rank">${String(i+1).padStart(2,"0")}</span>
-      <div><div class="gname">${g.nombre} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}</div>
+      <div><div class="gname">${g.nombre} ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}</div>
       <div class="gwhy"><span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span> ${breakdown(g)}</div>
-      <div class="gnet">hueco neto ${g.neto_pct}% · pob ~${(g.pob||0).toLocaleString()}</div></div>
+      <div class="gnet">hueco neto ${g.neto_pct}% · pob ~${(g.pob||0).toLocaleString()}</div>${altTxt}</div>
       <span class="gscore">${g.total}<small>/12</small></span>`;
     li.addEventListener("click",()=>{map.setView([g.lat,g.lon],14);gapMarkers[i].openPopup();});
     gl.appendChild(li);

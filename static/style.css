@@ -106,3 +106,8 @@ button:disabled{opacity:.5;cursor:wait}
 .modo-switch{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:10px}
 .modo-switch button{background:#0E141B;color:var(--muted);border:0;padding:5px 11px;font-family:inherit;font-size:12px;cursor:pointer}
 .modo-switch button.on{background:#F2A63B;color:#1A1206;font-weight:600}
+
+.grp{font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:4px;color:#0E141B;vertical-align:middle}
+.grp-1{background:#F2A63B}.grp-2{background:#35C2B1}.grp-3{background:#E4788C}
+.grp-4{background:#9B8CF2}.grp-5{background:#7FB2F0}.grp-0{background:#E4B84A}
+.alt{color:#F2C94C;font-size:10.5px;margin-top:3px;font-style:italic}

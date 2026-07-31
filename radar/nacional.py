@@ -151,7 +151,7 @@ def coverage_at(lat, lon, city_kitchens):
 def nearest_micro(lat, lon, radius_km=1.6):
     best, bd = None, radius_km
     for o in _ORD:
-        if not o.get("micro"): continue
+        if not o.get("micro") or o["micro"].strip().upper() in ("N/A","NA","",""): continue
         d = _km(lat, lon, o["lat"], o["lon"])
         if d < bd: bd, best = d, o["micro"]
     if best:

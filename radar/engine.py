@@ -227,7 +227,7 @@ def score_locales(lines, network, provider, cfg):
 def _nombre_hueco_nal(lat, lon):
     """Nombra por: 1) zona nombrada cercana, 2) microzona del RAW DATA, 3) coords."""
     from .demand import _ANCHORS
-    best, bd = None, 3.0
+    best, bd = None, 3.5
     for a in _ANCHORS:
         d = haversine_km(lat, lon, a["lat"], a["lon"])
         if d < bd: bd, best = d, a["name"]
@@ -239,6 +239,30 @@ def _nombre_hueco_nal(lat, lon):
     except Exception:
         pass
     return f"{lat:.3f},{lon:.3f}"
+
+
+def _marcar_canibalizacion(zonas, radio_km=4.0):
+    """Agrupa huecos que se canibalizan entre si (<radio_km) y les pone
+    'grupo' (id) y 'alternativas' (nombres de los otros del grupo)."""
+    grupos = []  # cada grupo = lista de indices
+    for i, z in enumerate(zonas):
+        col = None
+        for g in grupos:
+            if any(haversine_km(z["lat"], z["lon"], zonas[j]["lat"], zonas[j]["lon"]) < radio_km for j in g):
+                col = g; break
+        if col is None:
+            grupos.append([i])
+        else:
+            col.append(i)
+    for gid, g in enumerate(grupos):
+        if len(g) > 1:
+            for idx in g:
+                zonas[idx]["grupo"] = gid + 1
+                zonas[idx]["alternativas"] = [zonas[j]["nombre"] for j in g if j != idx]
+        else:
+            zonas[g[0]]["grupo"] = None
+            zonas[g[0]]["alternativas"] = []
+    return zonas
 
 def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
     """Score /12 nacional: FT(ordenes) + Nivel(censo) + Parecidos + No-canib, + bono hub."""
@@ -298,7 +322,7 @@ def discover_fisico(cid, cfg):
                 from .competidores import competitors_near as _cn
                 trafico = (_cn(la, lo)["marcas"] >= 1 or nacional.order_demand_at(la, lo, cid) >= 0.15
                            or nacional.hub_count(la, lo) >= 1)
-                if mind > 2.5 and (trafico or cid != "cdmx"):
+                if mind > 2.5 and trafico:
                     cand.append({"lat": la, "lon": lo, "nse": cen["nse"],
                                  "pob": cen["pob"], "estrato": cen["estrato"]})
             lo += step
@@ -314,10 +338,13 @@ def discover_fisico(cid, cfg):
     for z in zonas:
         la, lo, nse = z["lat"], z["lon"], z["nse"]
         ci = competitors_near(la, lo)
-        # 50% STOREFRONT (nivel/trafico) + 50% DELIVERY (mercado de hubs turbo)
-        store_pts = max(3.0, min(6.0, 3 + (nse - 0.72) / 0.26 * 3))     # 3-6 por nivel
         nhub = nacional.hub_count(la, lo, 3.0)
-        deliv_pts = min(6.0, 1 + nhub * 1.7)                            # 1-6 por delivery
+        # STOREFRONT (0-6): nivel + BONO DE OFICINAS/TRAFICO (hubs+restaurantes).
+        #   el Censo mide nivel residencial y subvalua zonas de oficina (Lomas, Sta Fe);
+        #   el bono corrige eso: mucha actividad = poder adquisitivo real mas alto.
+        oficina = min(1.5, nhub * 0.25 + ci["marcas"] * 0.3)           # hasta +1.5
+        store_pts = max(3.0, min(6.0, 3 + (nse - 0.72) / 0.26 * 3 + oficina))
+        deliv_pts = min(6.0, 1 + nhub * 1.7)                           # 1-6 por delivery
         total = round(min(12, store_pts + deliv_pts))
         nombre = _nombre_hueco_nal(la, lo)
         hint = _marca_hint_at(la, lo)
@@ -338,11 +365,14 @@ def discover_fisico(cid, cfg):
 
 
 def discover_gaps_ciudad(cid, cfg, modo='delivery'):
+    fis_all = discover_fisico(cid, cfg)
+    # PUNTO FISICO = solo buenos storefronts (score alto)
+    fuertes = [z for z in fis_all if z["total"] >= 9 and z["neto_pct"] >= 40]
     if modo == "fisico":
-        return discover_fisico(cid, cfg)
-    # DELIVERY: excluir zonas que ya califican para punto fisico (no repetir).
-    _fis = discover_fisico(cid, cfg)
-    _fis_pts = [(z["lat"], z["lon"]) for z in _fis]
+        return _marcar_canibalizacion(fuertes)
+    # delivery se evalua con SU PROPIA logica (contra cocinas reales), sin asumir
+    # nada de puntos fisicos potenciales. Solo evitamos repetir los fisicos fuertes.
+    _fis_pts = [(z["lat"], z["lon"]) for z in fuertes]
     from . import nacional
     from .demand import vetoed
     c = nacional.CIUDADES[cid]; bb = c["bbox"]
@@ -398,8 +428,8 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
     if modo == "fisico":
         out = [z for z in out if z["total"] >= 9 and z["neto_pct"] >= 45]
     else:
-        out = [z for z in out if z["total"] >= 10 and z["neto_pct"] >= 55]
-        # no repetir: excluir zonas que ya califican para PUNTO FISICO
+        out = [z for z in out if z["total"] >= 9 and z["neto_pct"] >= 50]
+        # no repetir: excluir SOLO las que ya son buen PUNTO FISICO (score alto)
         out = [z for z in out
                if not any(haversine_km(z["lat"], z["lon"], fl, fo) < 2.5
                           for fl, fo in _fis_pts)]
@@ -408,6 +438,7 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
     for z in sorted(out, key=lambda x: (x["total"], x["neto_pct"]), reverse=True):
         if z["nombre"] in seen: continue
         seen.add(z["nombre"]); ded.append(z)
+    ded = _marcar_canibalizacion(ded)
     return ded
 
 def _marca_hint_at(lat, lon):
