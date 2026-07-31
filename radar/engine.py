@@ -276,46 +276,60 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
             "pob": cen["pob"], "nse": cen["nse"], "competidores": ci["lista"]}
 
 def discover_fisico(cid, cfg):
-    """Punto fisico: barre TODAS las zonas de nivel alto (nse) del Censo, agrupadas,
-    sin cocina propia dentro. Rankea por nivel. Nombre de zona donde exista."""
+    """Punto fisico: barre la ciudad por CELDAS y evalua el nivel PROMEDIO del AREA
+    (no un AGEB suelto). Solo zonas donde TODA el area es de nivel alto (nse>=0.85)
+    y sin cocina propia dentro. Rankea por nivel."""
     from . import nacional
-    from .censo import census_at, _AGEB
+    from .censo import census_at
     from .competidores import competitors_near
     c = nacional.CIUDADES[cid]; bb = c["bbox"]
     kk = nacional.kitchens_ciudad(cid)
-
-    # 1) todos los AGEB de nivel alto de la ciudad, de mayor a menor nse
-    altos = [a for a in _AGEB if a.get("nse", 0) >= 0.80
-             and bb[0] < a["lat"] < bb[2] and bb[1] < a["lon"] < bb[3]]
-    altos.sort(key=lambda a: -a["nse"])
-
-    # 2) agrupar en zonas separadas >2 km, sin cocina propia dentro (<2.5 km)
-    clusters = []
-    for a in altos:
-        if any(haversine_km(a["lat"], a["lon"], z["lat"], z["lon"]) < 2.0 for z in clusters):
+    step = 0.012
+    cand = []
+    la = bb[0]
+    while la <= bb[2]:
+        lo = bb[1]
+        while lo <= bb[3]:
+            cen = census_at(la, lo)                 # nivel PROMEDIO del area (~1.2 km)
+            # estandar real (calibrado con Samara/Londres/Amsterdam/Manacar): nivel medio-alto
+            if cen["nse"] >= 0.72 and cen["pob"] > 0:
+                mind = min((haversine_km(la, lo, k["lat"], k["lon"]) for k in kk), default=99)
+                # señal comercial: hay restaurantes (corredor con trafico) o densidad de ordenes
+                from .competidores import competitors_near as _cn
+                trafico = (_cn(la, lo)["marcas"] >= 1 or nacional.order_demand_at(la, lo, cid) >= 0.15
+                           or nacional.hub_count(la, lo) >= 1)
+                if mind > 2.5 and (trafico or cid != "cdmx"):
+                    cand.append({"lat": la, "lon": lo, "nse": cen["nse"],
+                                 "pob": cen["pob"], "estrato": cen["estrato"]})
+            lo += step
+        la += step
+    cand.sort(key=lambda z: z["nse"], reverse=True)
+    # agrupar zonas separadas >2.5 km, quedandose con la de mayor nivel
+    zonas = []
+    for z in cand:
+        if any(haversine_km(z["lat"], z["lon"], w["lat"], w["lon"]) < 2.5 for w in zonas):
             continue
-        if min((haversine_km(a["lat"], a["lon"], k["lat"], k["lon"]) for k in kk), default=99) <= 2.5:
-            continue
-        clusters.append(a)
-
-    # 3) puntuar cada zona
+        zonas.append(z)
     out = []
-    for a in clusters:
-        la, lo, nse = a["lat"], a["lon"], a["nse"]
-        cen = census_at(la, lo)
+    for z in zonas:
+        la, lo, nse = z["lat"], z["lon"], z["nse"]
         ci = competitors_near(la, lo)
-        total = round(min(12, nse * 11 + min(ci["marcas"], 2) * 0.2))
+        # 50% STOREFRONT (nivel/trafico) + 50% DELIVERY (mercado de hubs turbo)
+        store_pts = max(3.0, min(6.0, 3 + (nse - 0.72) / 0.26 * 3))     # 3-6 por nivel
+        nhub = nacional.hub_count(la, lo, 3.0)
+        deliv_pts = min(6.0, 1 + nhub * 1.7)                            # 1-6 por delivery
+        total = round(min(12, store_pts + deliv_pts))
         nombre = _nombre_hueco_nal(la, lo)
         hint = _marca_hint_at(la, lo)
         marca = hint or ("Avocalia" if nse >= 0.86 else "Green House")
         out.append({"lat": round(la, 5), "lon": round(lo, 5), "nombre": nombre,
-                    "total": total, "ft": 0, "pop": cen["estrato"],
+                    "total": total, "ft": 0, "pop": z["estrato"],
                     "comp": ci["marcas"], "canib": 3, "hub": nacional.hub_cerca(la, lo),
-                    "pob": cen["pob"], "nse": nse, "cobertura": 0.0,
+                    "pob": z["pob"], "nse": round(nse, 3), "cobertura": 0.0,
                     "neto_pct": net_uncovered_pct_nal(la, lo, kk),
                     "competidores": ci["lista"], "marca_sugerida": marca,
-                    "porque": "Zona de nivel alto sin cocina propia; apta para punto fisico."})
-    out.sort(key=lambda z: z["nse"], reverse=True)
+                    "porque": "Area de nivel alto sin cocina propia; apta para punto fisico."})
+    out.sort(key=lambda z: z["total"], reverse=True)
     seen, ded = set(), []
     for z in out:
         if z["nombre"] in seen: continue
@@ -326,6 +340,9 @@ def discover_fisico(cid, cfg):
 def discover_gaps_ciudad(cid, cfg, modo='delivery'):
     if modo == "fisico":
         return discover_fisico(cid, cfg)
+    # DELIVERY: excluir zonas que ya califican para punto fisico (no repetir).
+    _fis = discover_fisico(cid, cfg)
+    _fis_pts = [(z["lat"], z["lon"]) for z in _fis]
     from . import nacional
     from .demand import vetoed
     c = nacional.CIUDADES[cid]; bb = c["bbox"]
@@ -382,6 +399,10 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
         out = [z for z in out if z["total"] >= 9 and z["neto_pct"] >= 45]
     else:
         out = [z for z in out if z["total"] >= 10 and z["neto_pct"] >= 55]
+        # no repetir: excluir zonas que ya califican para PUNTO FISICO
+        out = [z for z in out
+               if not any(haversine_km(z["lat"], z["lon"], fl, fo) < 2.5
+                          for fl, fo in _fis_pts)]
     # dedup por nombre
     seen, ded = set(), []
     for z in sorted(out, key=lambda x: (x["total"], x["neto_pct"]), reverse=True):

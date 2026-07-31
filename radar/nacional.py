@@ -91,6 +91,9 @@ def hub_cerca(lat, lon, radius_km=1.5):
         if _km(lat, lon, h["lat"], h["lon"]) <= radius_km: return True
     return False
 
+def hub_count(lat, lon, radius_km=2.5):
+    return sum(1 for h in _HUBS if _km(lat, lon, h["lat"], h["lon"]) <= radius_km)
+
 # --- Cobertura por poligono real (map 11) + fallback 3 km ---
 def _load_polys():
     polys = []

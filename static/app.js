@@ -40,7 +40,8 @@ function renderCity(){
      .bindPopup(`<b>${p.nombre}</b><br>cocina · cobertura ${p.radio_km} km`);
   });
   document.getElementById("netCount").textContent = CITY.network.length+" cocinas · "+CITY.gaps.length+" huecos";
-  document.getElementById("gapSub").textContent = CITY.nombre+" · "+CITY.gaps.length+" huecos por score /12"+(CITY.nivel?"":" · (sin Nivel aún)");
+  const modoTxt = (MODO==="fisico") ? "PUNTO FÍSICO" : "DELIVERY / DARK KITCHEN";
+  document.getElementById("gapSub").innerHTML = "<b>"+modoTxt+"</b> · "+CITY.nombre+" · "+CITY.gaps.length+" zonas";
 
   // huecos
   const gl=document.getElementById("gapList"); gl.innerHTML="";
@@ -56,7 +57,7 @@ function renderCity(){
         `FT ${g.ft} · Nivel ${g.pop} · Rest.parecidos ${g.comp} · NoCanib ${g.canib}<br>`+
         `población ~${(g.pob||0).toLocaleString()} · cobertura ${g.cobertura} · <b>hueco neto ${g.neto_pct}%</b><br>`+
         `restaurantes parecidos: ${comp}${turbo}<br><b>Sugerido: ${g.marca_sugerida}</b>`);
-    m.bindTooltip(`${g.total}`,{permanent:true,direction:"center",className:"gap-num"});
+    m.bindTooltip(`${i+1}`,{permanent:true,direction:"center",className:"gap-num"});
     gapMarkers[i]=m;
 
     const li=document.createElement("li");
