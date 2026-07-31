@@ -241,6 +241,75 @@ def _nombre_hueco_nal(lat, lon):
     return f"{lat:.3f},{lon:.3f}"
 
 
+
+
+
+
+def plan_cobertura(cid, cfg, n_aperturas=3, modo="fisico", radio_km=4.0):
+    """Dado N aperturas, elige la combinacion que cubre MAS poblacion sin traslaparse.
+    Greedy: en cada paso agrega el hueco que suma mas poblacion nueva (descontando
+    lo que ya cubre lo elegido). Devuelve el plan ordenado."""
+    huecos = discover_gaps_ciudad(cid, cfg, modo)
+    if not huecos:
+        return []
+    elegidos = []
+    disponibles = list(huecos)
+    while disponibles and len(elegidos) < n_aperturas:
+        mejor, mejor_val = None, -1
+        for z in disponibles:
+            # penaliza si esta cerca de uno ya elegido (traslape)
+            solapa = any(haversine_km(z["lat"], z["lon"], e["lat"], e["lon"]) < radio_km
+                         for e in elegidos)
+            # valor = poblacion * (0.35 si se traslapa, 1.0 si es territorio limpio) * calidad
+            factor = 0.35 if solapa else 1.0
+            # valor = poblacion * factor_traslape * calidad^2 (prioriza zonas buenas)
+            calidad = (z["total"] / 12.0) ** 2
+            val = z.get("pob", 0) * factor * calidad
+            if val > mejor_val:
+                mejor_val, mejor = val, z
+        elegidos.append(mejor)
+        disponibles.remove(mejor)
+    # marcar orden y poblacion acumulada
+    pob_acum = 0
+    for i, e in enumerate(elegidos, 1):
+        pob_acum += e.get("pob", 0)
+        e["orden_plan"] = i
+        e["pob_acumulada"] = pob_acum
+    return elegidos
+
+def _pal(v, cortes):
+    """v y cortes (medio, alto) -> bajo/medio/alto"""
+    return "alto" if v >= cortes[1] else ("medio" if v >= cortes[0] else "bajo")
+
+def _explica_componentes(z):
+    """Explicacion en espanol segun el modo del hueco."""
+    if z.get("_modo") == "fisico":
+        niv = _pal(z.get("nse",0), (0.78, 0.86))
+        del_ = _pal(z.get("nhub",0), (1, 3))
+        terr = _pal(z.get("neto_pct",0), (35, 55))
+        z["explica"] = [
+            {"label":"Nivel socioeconomico","valor":niv,
+             "frase":{"bajo":"nivel algo bajo para storefront premium","medio":"nivel medio-alto, sirve para Green House","alto":"nivel alto, aguanta Avocalia de calle"}[niv]},
+            {"label":"Delivery de la zona","valor":del_,
+             "frase":{"bajo":"delivery flojo (pocos hubs cerca)","medio":"delivery decente","alto":"delivery fuerte (varios hubs, mucho reparto)"}[del_]},
+            {"label":"Territorio nuevo","valor":terr,
+             "frase":{"bajo":"ya cubres buena parte de la zona","medio":"cubres una parte","alto":"casi sin cubrir, territorio nuevo"}[terr]},
+        ]
+    else:
+        def nv(v): return "bajo" if v<=1 else ("medio" if v==2 else "alto")
+        ft, niv, par, nc = z.get("ft",0), z.get("pop",0), z.get("comp",0), z.get("canib",0)
+        z["explica"] = [
+            {"label":"Trafico / demanda","valor":nv(ft),
+             "frase":{"bajo":"poco movimiento","medio":"movimiento moderado","alto":"zona de mucho flujo de pedidos"}[nv(ft)]},
+            {"label":"Nivel socioeconomico","valor":nv(niv),
+             "frase":{"bajo":"nivel bajo","medio":"nivel medio","alto":"buen poder adquisitivo"}[nv(niv)]},
+            {"label":"Restaurantes parecidos","valor":nv(par),
+             "frase":{"bajo":"pocos cerca","medio":"algunos cerca","alto":"varios: zona que pide comida"}[nv(par)]},
+            {"label":"No te canibaliza","valor":nv(nc),
+             "frase":{"bajo":"le quitarias ventas a tus cocinas","medio":"algo de traslape","alto":"territorio nuevo, no te quitas ventas"}[nv(nc)]},
+        ]
+    return z
+
 def _marcar_canibalizacion(zonas, radio_km=4.0):
     """Agrupa huecos que se canibalizan entre si (<radio_km) y les pone
     'grupo' (id) y 'alternativas' (nombres de los otros del grupo)."""
@@ -248,12 +317,15 @@ def _marcar_canibalizacion(zonas, radio_km=4.0):
     for i, z in enumerate(zonas):
         col = None
         for g in grupos:
-            if any(haversine_km(z["lat"], z["lon"], zonas[j]["lat"], zonas[j]["lon"]) < radio_km for j in g):
+            # entra al grupo SOLO si se canibaliza con TODAS (no por cadena)
+            if all(haversine_km(z["lat"], z["lon"], zonas[j]["lat"], zonas[j]["lon"]) < radio_km for j in g):
                 col = g; break
         if col is None:
             grupos.append([i])
         else:
             col.append(i)
+    for z in zonas:
+        _explica_componentes(z)
     for gid, g in enumerate(grupos):
         if len(g) > 1:
             for idx in g:
@@ -350,6 +422,7 @@ def discover_fisico(cid, cfg):
         hint = _marca_hint_at(la, lo)
         marca = hint or ("Avocalia" if nse >= 0.86 else "Green House")
         out.append({"lat": round(la, 5), "lon": round(lo, 5), "nombre": nombre,
+                    "_modo": "fisico", "nhub": nhub,
                     "total": total, "ft": 0, "pop": z["estrato"],
                     "comp": ci["marcas"], "canib": 3, "hub": nacional.hub_cerca(la, lo),
                     "pob": z["pob"], "nse": round(nse, 3), "cobertura": 0.0,

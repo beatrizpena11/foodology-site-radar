@@ -10,7 +10,7 @@ if os.path.exists(_envfile):
 from flask import Flask, render_template, request, jsonify
 import yaml
 from radar.providers import get_provider
-from radar.engine import discover_gaps_ciudad, score_locales
+from radar.engine import discover_gaps_ciudad, score_locales, plan_cobertura
 from radar import nacional
 
 BASE = os.path.dirname(__file__)
@@ -81,6 +81,26 @@ def api_ciudad(cid):
     modo = request.args.get("modo", "delivery")
     if modo not in ("delivery", "fisico"): modo = "delivery"
     return jsonify(city_payload(cid, modo=modo))
+
+@app.route("/api/plan/<cid>")
+def api_plan(cid):
+    if cid not in nacional.CIUDADES:
+        return jsonify({"error": "ciudad desconocida"}), 404
+    modo = request.args.get("modo", "fisico")
+    if modo not in ("delivery", "fisico"): modo = "fisico"
+    try:
+        n = max(1, min(10, int(request.args.get("n", 3))))
+    except Exception:
+        n = 3
+    plan = plan_cobertura(cid, CFG, n, modo)
+    # nombrar coords si hiciera falta (reusa el mismo criterio)
+    for z in plan:
+        if _es_coord(z.get("nombre","")):
+            try:
+                nm = PROVIDER.reverse_name(z["lat"], z["lon"])
+                if nm and not _es_coord(nm): z["nombre"] = nm
+            except Exception: pass
+    return jsonify({"plan": plan, "n": n, "modo": modo})
 
 @app.route("/api/score", methods=["POST"])
 def api_score():

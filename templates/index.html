@@ -31,6 +31,15 @@
     <div class="panel-head">
       <h2>Huecos detectados</h2>
       <p class="sub" id="gapSub">rankeados por score /12</p>
+      <div class="plan-box">
+        <span class="plan-lbl">📍 Plan de cobertura:</span>
+        <button class="plan-btn" data-n="2">2</button>
+        <button class="plan-btn" data-n="3">3</button>
+        <button class="plan-btn" data-n="5">5</button>
+        <span class="plan-lbl">cocinas</span>
+        <button class="plan-clear" id="planClear" style="display:none">✕ ver todos</button>
+      </div>
+      <div id="planResult"></div>
     </div>
     <ol class="gaps" id="gapList"></ol>
 

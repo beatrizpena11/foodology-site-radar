@@ -3,7 +3,9 @@ let CITY = window.__CITY__;
 let MODO = (CITY && CITY.modo) || 'delivery';
 const cls = s => (s||"").replace(/ /g,".");
 const pill = (lbl,v)=>`<span class="s12"><b>${v}</b>${lbl}</span>`;
-const breakdown = g => pill("FT",g.ft)+pill("Nivel",g.pop)+pill("Rest",g.comp)+pill("NoCan",g.canib);
+const colorVal = v => v==="alto"?"#35C2B1":(v==="medio"?"#F2A63B":"#8695A6");
+const breakdown = g => (g.explica||[]).map(e=>
+  `<div class="exp"><span class="expv" style="color:${colorVal(e.valor)}">${e.valor.toUpperCase()}</span> <b>${e.label}</b> — ${e.frase}</div>`).join("");
 
 const map = L.map("map",{zoomControl:true}).setView(CITY.centro, CITY.zoom);
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
@@ -62,12 +64,13 @@ function renderCity(){
     gapMarkers[i]=m;
 
     const altTxt = (g.alternativas && g.alternativas.length)
-      ? `<div class="alt">⚄ alternativa de: ${g.alternativas.join(", ")} — <b>elige una</b></div>` : "";
-    const grpTag = g.grupo ? `<span class="grp grp-${g.grupo%6}">grupo ${g.grupo}</span>` : "";
+      ? `<div class="alt">⚄ Compite con <b>${g.alternativas.join(", ")}</b> — abre solo UNA de estas</div>` : "";
+    const grpTag = g.grupo ? `<span class="grp grp-${g.grupo%6}">⚄ grupo ${g.grupo}</span>` : "";
     const li=document.createElement("li");
     li.innerHTML=`<span class="rank">${String(i+1).padStart(2,"0")}</span>
       <div><div class="gname">${g.nombre} ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}</div>
-      <div class="gwhy"><span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span> ${breakdown(g)}</div>
+      <div class="gwhy"><span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span></div>
+      ${breakdown(g)}
       <div class="gnet">hueco neto ${g.neto_pct}% · pob ~${(g.pob||0).toLocaleString()}</div>${altTxt}</div>
       <span class="gscore">${g.total}<small>/12</small></span>`;
     li.addEventListener("click",()=>{map.setView([g.lat,g.lon],14);gapMarkers[i].openPopup();});
@@ -130,6 +133,46 @@ document.querySelectorAll("#modoSwitch button").forEach(b=>{
     await loadCityData(CITY.id, false);
   });
 });
+// plan de cobertura
+document.querySelectorAll(".plan-btn").forEach(b=>{
+  b.addEventListener("click", async ()=>{
+    const n=b.dataset.n;
+    document.querySelectorAll(".plan-btn").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    const box=document.getElementById("planResult");
+    box.innerHTML='<div class="plan-load">calculando el mejor plan de '+n+' aperturas…</div>';
+    try{
+      const r=await fetch("/api/plan/"+CITY.id+"?modo="+MODO+"&n="+n);
+      const data=await r.json();
+      renderPlan(data.plan);
+    }catch(e){ box.innerHTML='<div class="plan-load">error, reintenta</div>'; }
+  });
+});
+document.getElementById("planClear").addEventListener("click", ()=>{
+  document.getElementById("planResult").innerHTML="";
+  document.getElementById("planClear").style.display="none";
+  document.querySelectorAll(".plan-btn").forEach(x=>x.classList.remove("on"));
+  renderCity();
+});
+
+function renderPlan(plan){
+  const box=document.getElementById("planResult");
+  document.getElementById("planClear").style.display="inline-block";
+  gapLayer.clearLayers();
+  let html='<div class="plan-title">Plan óptimo — cubre '+(plan[plan.length-1]?.pob_acumulada||0).toLocaleString()+' personas</div>';
+  plan.forEach((z,i)=>{
+    // marcar en el mapa con numero de orden
+    L.circle([z.lat,z.lon],{radius:4000,color:"#35C2B1",weight:2,opacity:.9,fillColor:"#35C2B1",fillOpacity:.10}).addTo(gapLayer);
+    L.circleMarker([z.lat,z.lon],{radius:11,color:"#0E141B",weight:2,fillColor:"#35C2B1",fillOpacity:1}).addTo(gapLayer)
+      .bindTooltip(`${z.orden_plan}`,{permanent:true,direction:"center",className:"plan-num"})
+      .bindPopup(`<b>#${z.orden_plan} · ${z.nombre}</b><br>${z.total}/12 · pob ~${(z.pob||0).toLocaleString()}<br>acumulado: ${(z.pob_acumulada||0).toLocaleString()} personas`);
+    html+=`<div class="plan-row"><span class="plan-ord">${z.orden_plan}</span>
+      <div><b>${z.nombre}</b> <span class="chip ${cls(z.marca_sugerida)}">${z.marca_sugerida}</span>
+      <div class="plan-sub">${z.total}/12 · +${(z.pob||0).toLocaleString()} personas · acumulado ${(z.pob_acumulada||0).toLocaleString()}</div></div></div>`;
+  });
+  box.innerHTML=html;
+  if(plan.length){ const b=L.latLngBounds(plan.map(z=>[z.lat,z.lon])); map.fitBounds(b,{padding:[60,60],maxZoom:13}); }
+}
 renderCity();                 // pinta red al instante
 loadCityData(CITY.id, false); // trae los huecos en segundo plano
 
