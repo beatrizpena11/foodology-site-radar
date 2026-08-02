@@ -326,10 +326,12 @@ def _marcar_canibalizacion(zonas, radio_km=4.0):
             col.append(i)
     for z in zonas:
         _explica_componentes(z)
-    for gid, g in enumerate(grupos):
+    vis = 0  # contador solo de grupos visibles (2+ zonas)
+    for g in grupos:
         if len(g) > 1:
+            vis += 1
             for idx in g:
-                zonas[idx]["grupo"] = gid + 1
+                zonas[idx]["grupo"] = vis
                 zonas[idx]["alternativas"] = [zonas[j]["nombre"] for j in g if j != idx]
         else:
             zonas[g[0]]["grupo"] = None
