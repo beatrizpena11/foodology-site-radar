@@ -128,3 +128,20 @@ button:disabled{opacity:.5;cursor:wait}
 .plan-ord{background:#35C2B1;color:#0E141B;font-weight:700;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
 .plan-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .plan-num{background:transparent;border:0;box-shadow:none;color:#0E141B;font-weight:700;font-size:12px}
+
+.plan-base{font-size:12px;color:var(--muted);margin:8px 0}
+.plan-base-btn{background:#0E141B;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 9px;margin-left:5px;cursor:pointer;font-size:11px}
+.plan-base-btn.on{background:#F2A63B;color:#1A1206;font-weight:600;border-color:#F2A63B}
+.plan-btn[data-n="8"]{width:auto;padding:0 8px}
+
+/* lista colapsable: solo titulo + score; detalle al hacer clic */
+#gapList li{display:block;padding:0;border-bottom:1px solid var(--line)}
+.ghead{display:flex;align-items:center;gap:8px;padding:11px 4px;cursor:pointer;transition:background .12s}
+.ghead:hover{background:rgba(255,255,255,.03)}
+.gtitle{flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.chev{color:var(--muted);font-size:11px;transition:transform .15s;flex-shrink:0}
+li.open .chev{transform:rotate(90deg)}
+.gdetail{max-height:0;overflow:hidden;transition:max-height .22s ease;padding:0 4px 0 34px}
+li.open .gdetail{max-height:340px;padding-bottom:11px}
+.gmapbtn{color:#35C2B1;font-size:11px;font-weight:600;cursor:pointer;margin-top:8px}
+.gmapbtn:hover{text-decoration:underline}

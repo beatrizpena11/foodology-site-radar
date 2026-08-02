@@ -282,32 +282,32 @@ def _pal(v, cortes):
     return "alto" if v >= cortes[1] else ("medio" if v >= cortes[0] else "bajo")
 
 def _explica_componentes(z):
-    """Explicacion en espanol segun el modo del hueco."""
-    if z.get("_modo") == "fisico":
-        niv = _pal(z.get("nse",0), (0.78, 0.86))
-        del_ = _pal(z.get("nhub",0), (1, 3))
-        terr = _pal(z.get("neto_pct",0), (35, 55))
-        z["explica"] = [
-            {"label":"Nivel socioeconomico","valor":niv,
-             "frase":{"bajo":"nivel algo bajo para storefront premium","medio":"nivel medio-alto, sirve para Green House","alto":"nivel alto, aguanta Avocalia de calle"}[niv]},
-            {"label":"Delivery de la zona","valor":del_,
-             "frase":{"bajo":"delivery flojo (pocos hubs cerca)","medio":"delivery decente","alto":"delivery fuerte (varios hubs, mucho reparto)"}[del_]},
-            {"label":"Territorio nuevo","valor":terr,
-             "frase":{"bajo":"ya cubres buena parte de la zona","medio":"cubres una parte","alto":"casi sin cubrir, territorio nuevo"}[terr]},
-        ]
-    else:
-        def nv(v): return "bajo" if v<=1 else ("medio" if v==2 else "alto")
-        ft, niv, par, nc = z.get("ft",0), z.get("pop",0), z.get("comp",0), z.get("canib",0)
-        z["explica"] = [
-            {"label":"Trafico / demanda","valor":nv(ft),
-             "frase":{"bajo":"poco movimiento","medio":"movimiento moderado","alto":"zona de mucho flujo de pedidos"}[nv(ft)]},
-            {"label":"Nivel socioeconomico","valor":nv(niv),
-             "frase":{"bajo":"nivel bajo","medio":"nivel medio","alto":"buen poder adquisitivo"}[nv(niv)]},
-            {"label":"Restaurantes parecidos","valor":nv(par),
-             "frase":{"bajo":"pocos cerca","medio":"algunos cerca","alto":"varios: zona que pide comida"}[nv(par)]},
-            {"label":"No te canibaliza","valor":nv(nc),
-             "frase":{"bajo":"le quitarias ventas a tus cocinas","medio":"algo de traslape","alto":"territorio nuevo, no te quitas ventas"}[nv(nc)]},
-        ]
+    """Explicacion en espanol: 4 categorias iguales (Demanda, Trafico/entorno,
+    Nivel, No-canibaliza), cada una /3. En fisico el Trafico suma restaurantes+oficinas."""
+    def pal(n): return "bajo" if n <= 1 else ("medio" if n == 2 else "alto")
+    dem = z.get("c_dem", z.get("ft", 1))
+    traf = z.get("c_traf", z.get("comp", 1))
+    niv = z.get("c_niv", z.get("pop", 1))
+    nc = z.get("c_nc", z.get("canib", 1))
+    fisico = z.get("_modo") == "fisico"
+    traf_frase = {
+        "bajo": "poco entorno comercial cerca",
+        "medio": "algo de entorno comercial",
+        "alto": ("hubs, restaurantes y oficinas cerca" if fisico else "varios hubs cerca (Turbo disponible)"),
+    }
+    z["explica"] = [
+        {"label": "Demanda (consumo)", "valor": pal(dem), "n": dem,
+         "frase": {"bajo": "se pide poca comida en la zona", "medio": "consumo moderado de delivery",
+                   "alto": "mucho consumo de comida a domicilio"}[pal(dem)]},
+        {"label": "Trafico / entorno", "valor": pal(traf), "n": traf,
+         "frase": traf_frase[pal(traf)]},
+        {"label": "Nivel socioeconomico", "valor": pal(niv), "n": niv,
+         "frase": {"bajo": "poder adquisitivo bajo para tus marcas", "medio": "nivel medio",
+                   "alto": "buen poder adquisitivo"}[pal(niv)]},
+        {"label": "No te canibaliza", "valor": pal(nc), "n": nc,
+         "frase": {"bajo": "le quitarias ventas a tus cocinas", "medio": "algo de traslape con tu red",
+                   "alto": "territorio nuevo, no te quitas ventas"}[pal(nc)]},
+    ]
     return z
 
 def _marcar_canibalizacion(zonas, radio_km=4.0):
@@ -337,39 +337,52 @@ def _marcar_canibalizacion(zonas, radio_km=4.0):
     return zonas
 
 def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
-    """Score /12 nacional: FT(ordenes) + Nivel(censo) + Parecidos + No-canib, + bono hub."""
+    """Score /12 con 4 categorias iguales para ambos modos (cada una /3):
+    1) DEMANDA (consumo: pedidos Rappi/Uber/propios o potencial poblacional)
+    2) TRAFICO/ENTORNO (hubs; y en FISICO ademas restaurantes parecidos + oficinas)
+    3) NIVEL socioeconomico (INEGI)
+    4) NO-CANIBALIZACION (vs cocinas reales)
+    """
     from . import nacional
     from .censo import census_at
     from .competidores import competitors_near
-    # FT = demanda de mercado: max(ordenes reales, poblacion residente)
-    dem = nacional.order_demand_at(lat, lon, cid)
     cen = census_at(lat, lon)
-    pob_norm = min(1.0, cen["pob"]/8000.0)
-    ftsig = max(dem, pob_norm)
-    ft = 3 if ftsig >= 0.5 else (2 if ftsig >= 0.2 else 1)
-    niv = cen["estrato"] or 1
-    # Restaurantes parecidos (valida que la zona pide comida)
     ci = competitors_near(lat, lon)
-    par = 3 if ci["marcas"] >= 2 else (2 if ci["marcas"] == 1 else 1)
-    # Cobertura (poligono real o 3 km) -> No-canibalizacion
-    cov = nacional.coverage_at(lat, lon, city_kitchens)
-    nc = 3 if cov < 0.15 else (2 if cov < 0.5 else 1)
-    # Hub Turbo cercano -> bono chico + etiqueta
-    hub = nacional.hub_cerca(lat, lon)
+    nhub = nacional.hub_count(lat, lon, 3.0)
+
+    # 1) DEMANDA (consumo)
+    dem_ord = nacional.order_demand_at(lat, lon, cid)
+    pobn = min(1.0, cen["pob"] / 8000.0)
+    dsig = max(dem_ord, pobn)
+    c_dem = 3 if dsig >= 0.5 else (2 if dsig >= 0.25 else 1)
+
+    # 2) TRAFICO / ENTORNO (hubs; + restaurantes + oficinas en fisico)
+    hub_sig = min(1.0, nhub / 3.0)
+    sucur = ci.get("sucursales", len(ci.get("lista", [])))
     if modo == "fisico":
-        # PUNTO FISICO: manda el NIVEL FINO (nse continuo). Las zonas top
-        # (Lomas, Tecamachalco, Pedregal, San Jeronimo) suben; el trafico solo desempata.
-        total = round(min(12, cen["nse"] * 11 + min(ft, 2) * 0.15))
-        rank = min(12, cen["nse"] * 11) + (0.5 if hub else 0)
+        rest_sig = min(1.0, ci["marcas"] / 2.0)
+        ofi_sig = min(1.0, (nhub + sucur) / 6.0)     # oficinas ~ intensidad comercial
+        tsig = 0.5 * hub_sig + 0.3 * rest_sig + 0.2 * ofi_sig
     else:
-        # DELIVERY / DARK KITCHEN
-        base = ft + niv + par + nc
-        mult = {3: 1.0, 2: 0.7, 1: 0.35}.get(niv, 0.35)
-        total = round(base * mult)
-        rank = base * mult + (0.5 if hub else 0)
-    return {"ft": ft, "pop": niv, "comp": par, "canib": nc, "total": total,
-            "rank": rank, "hub": hub, "dem": round(dem, 2), "cov": round(cov, 2),
-            "pob": cen["pob"], "nse": cen["nse"], "competidores": ci["lista"]}
+        tsig = hub_sig
+    c_traf = 3 if tsig >= 0.6 else (2 if tsig >= 0.3 else 1)
+
+    # 3) NIVEL (INEGI, nse fino)
+    nse = cen["nse"]
+    c_niv = 3 if nse >= 0.82 else (2 if nse >= 0.70 else 1)
+
+    # 4) NO-CANIBALIZACION (vs cocinas reales)
+    cov = nacional.coverage_at(lat, lon, city_kitchens)
+    c_nc = 3 if cov < 0.15 else (2 if cov < 0.5 else 1)
+
+    total = c_dem + c_traf + c_niv + c_nc
+    hub = nhub >= 1
+    return {"c_dem": c_dem, "c_traf": c_traf, "c_niv": c_niv, "c_nc": c_nc,
+            "total": total, "rank": total + (0.3 if hub else 0),
+            "hub": hub, "nhub": nhub, "dem": round(dsig, 2), "cov": round(cov, 2),
+            "pob": cen["pob"], "nse": nse, "competidores": ci["lista"],
+            # compat con codigo viejo:
+            "ft": c_dem, "pop": c_niv, "comp": c_traf, "canib": c_nc}
 
 def discover_fisico(cid, cfg):
     """Punto fisico: barre la ciudad por CELDAS y evalua el nivel PROMEDIO del AREA
@@ -409,25 +422,18 @@ def discover_fisico(cid, cfg):
     out = []
     for z in zonas:
         la, lo, nse = z["lat"], z["lon"], z["nse"]
-        ci = competitors_near(la, lo)
-        nhub = nacional.hub_count(la, lo, 3.0)
-        # STOREFRONT (0-6): nivel + BONO DE OFICINAS/TRAFICO (hubs+restaurantes).
-        #   el Censo mide nivel residencial y subvalua zonas de oficina (Lomas, Sta Fe);
-        #   el bono corrige eso: mucha actividad = poder adquisitivo real mas alto.
-        oficina = min(1.5, nhub * 0.25 + ci["marcas"] * 0.3)           # hasta +1.5
-        store_pts = max(3.0, min(6.0, 3 + (nse - 0.72) / 0.26 * 3 + oficina))
-        deliv_pts = min(6.0, 1 + nhub * 1.7)                           # 1-6 por delivery
-        total = round(min(12, store_pts + deliv_pts))
+        s = scores12_nal(la, lo, cid, kk, "fisico")
         nombre = _nombre_hueco_nal(la, lo)
         hint = _marca_hint_at(la, lo)
         marca = hint or ("Avocalia" if nse >= 0.86 else "Green House")
         out.append({"lat": round(la, 5), "lon": round(lo, 5), "nombre": nombre,
-                    "_modo": "fisico", "nhub": nhub,
-                    "total": total, "ft": 0, "pop": z["estrato"],
-                    "comp": ci["marcas"], "canib": 3, "hub": nacional.hub_cerca(la, lo),
-                    "pob": z["pob"], "nse": round(nse, 3), "cobertura": 0.0,
-                    "neto_pct": net_uncovered_pct_nal(la, lo, kk),
-                    "competidores": ci["lista"], "marca_sugerida": marca,
+                    "_modo": "fisico", "nhub": s["nhub"],
+                    "total": s["total"], "c_dem": s["c_dem"], "c_traf": s["c_traf"],
+                    "c_niv": s["c_niv"], "c_nc": s["c_nc"],
+                    "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
+                    "hub": s["hub"], "pob": z["pob"], "nse": round(nse, 3),
+                    "cobertura": s["cov"], "neto_pct": net_uncovered_pct_nal(la, lo, kk),
+                    "competidores": s["competidores"], "marca_sugerida": marca,
                     "porque": "Area de nivel alto sin cocina propia; apta para punto fisico."})
     out.sort(key=lambda z: z["total"], reverse=True)
     seen, ded = set(), []
@@ -491,8 +497,10 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
                                       "comercial_activity": s["dem"],
                                       "ingreso_premium": s["nse"]}, cfg)
         out.append({"lat": z["lat"], "lon": z["lon"], "nombre": nombre,
-                    "total": s["total"], "ft": s["ft"], "pop": s["pop"],
-                    "comp": s["comp"], "canib": s["canib"], "hub": s["hub"],
+                    "total": s["total"], "c_dem": s["c_dem"], "c_traf": s["c_traf"],
+                    "c_niv": s["c_niv"], "c_nc": s["c_nc"],
+                    "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
+                    "hub": s["hub"], "nhub": s.get("nhub", 0),
                     "pob": s["pob"], "nse": s["nse"], "cobertura": s["cov"],
                     "neto_pct": net_uncovered_pct_nal(z["lat"], z["lon"], kk),
                     "competidores": s["competidores"],

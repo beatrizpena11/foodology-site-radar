@@ -1,11 +1,11 @@
 const CITIES = window.__CITIES__, CFG = window.__CFG__;
 let CITY = window.__CITY__;
-let MODO = (CITY && CITY.modo) || 'delivery';
+let MODO = 'fisico';
 const cls = s => (s||"").replace(/ /g,".");
 const pill = (lbl,v)=>`<span class="s12"><b>${v}</b>${lbl}</span>`;
 const colorVal = v => v==="alto"?"#35C2B1":(v==="medio"?"#F2A63B":"#8695A6");
 const breakdown = g => (g.explica||[]).map(e=>
-  `<div class="exp"><span class="expv" style="color:${colorVal(e.valor)}">${e.valor.toUpperCase()}</span> <b>${e.label}</b> — ${e.frase}</div>`).join("");
+  `<div class="exp"><span class="expv" style="color:${colorVal(e.valor)}">${e.valor.toUpperCase()} (${e.n}/3)</span> <b>${e.label}</b> — ${e.frase}</div>`).join("");
 
 const map = L.map("map",{zoomControl:true}).setView(CITY.centro, CITY.zoom);
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
@@ -26,6 +26,7 @@ CITIES.forEach(c=>{
 sel.addEventListener("change", async e=>{
   sel.disabled=true;
   await loadCityData(e.target.value, true);
+  if(MODO==="plan") mostrarPlanUI();
   sel.disabled=false;
 });
 
@@ -67,13 +68,28 @@ function renderCity(){
       ? `<div class="alt">⚄ Compite con <b>${g.alternativas.join(", ")}</b> — abre solo UNA de estas</div>` : "";
     const grpTag = g.grupo ? `<span class="grp grp-${g.grupo%6}">⚄ grupo ${g.grupo}</span>` : "";
     const li=document.createElement("li");
-    li.innerHTML=`<span class="rank">${String(i+1).padStart(2,"0")}</span>
-      <div><div class="gname">${g.nombre} ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}</div>
-      <div class="gwhy"><span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span></div>
-      ${breakdown(g)}
-      <div class="gnet">hueco neto ${g.neto_pct}% · pob ~${(g.pob||0).toLocaleString()}</div>${altTxt}</div>
-      <span class="gscore">${g.total}<small>/12</small></span>`;
-    li.addEventListener("click",()=>{map.setView([g.lat,g.lon],14);gapMarkers[i].openPopup();});
+    li.innerHTML=`
+      <div class="ghead">
+        <span class="rank">${String(i+1).padStart(2,"0")}</span>
+        <div class="gtitle"><span class="gname">${g.nombre}</span> ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}
+          <span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span></div>
+        <span class="gscore">${g.total}<small>/12</small></span>
+        <span class="chev">▸</span>
+      </div>
+      <div class="gdetail">
+        ${breakdown(g)}
+        <div class="gnet">hueco neto ${g.neto_pct}% · pob ~${(g.pob||0).toLocaleString()}</div>${altTxt}
+        <div class="gmapbtn">Ver en el mapa →</div>
+      </div>`;
+    // clic en el encabezado: expandir/colapsar el detalle
+    const head=li.querySelector(".ghead");
+    head.addEventListener("click",()=>{
+      li.classList.toggle("open");
+    });
+    // clic en "ver en el mapa"
+    li.querySelector(".gmapbtn").addEventListener("click",(e)=>{
+      e.stopPropagation(); map.setView([g.lat,g.lon],14); gapMarkers[i].openPopup();
+    });
     gl.appendChild(li);
   });
   if(ringsOn) ringLayer.addTo(map);
@@ -130,9 +146,41 @@ document.querySelectorAll("#modoSwitch button").forEach(b=>{
     if(b.classList.contains("on")) return;
     document.querySelectorAll("#modoSwitch button").forEach(x=>x.classList.remove("on"));
     b.classList.add("on"); MODO=b.dataset.modo;
-    await loadCityData(CITY.id, false);
+    if(MODO==="plan"){ mostrarPlanUI(); }
+    else { document.getElementById("planResult").innerHTML=""; await loadCityData(CITY.id, false); }
   });
 });
+
+function mostrarPlanUI(){
+  document.getElementById("gapList").innerHTML="";
+  document.getElementById("gapSub").innerHTML="<b>PLAN DE EXPANSIÓN</b> · "+CITY.nombre+" · elige cuántas cocinas";
+  const box=document.getElementById("planResult");
+  box.innerHTML=`<div class="plan-box">
+    <span class="plan-lbl">¿Cuántas cocinas vas a abrir?</span>
+    <button class="plan-btn" data-n="2">2</button>
+    <button class="plan-btn" data-n="3">3</button>
+    <button class="plan-btn" data-n="5">5</button>
+    <button class="plan-btn" data-n="8">8</button>
+  </div>
+  <div class="plan-base">¿Punto físico o delivery?
+    <button class="plan-base-btn on" data-base="fisico">Físico</button>
+    <button class="plan-base-btn" data-base="delivery">Delivery</button></div>
+  <div id="planInner"></div>`;
+  gapLayer.clearLayers();
+  let baseModo="fisico";
+  box.querySelectorAll(".plan-base-btn").forEach(bb=>bb.addEventListener("click",()=>{
+    box.querySelectorAll(".plan-base-btn").forEach(x=>x.classList.remove("on"));
+    bb.classList.add("on"); baseModo=bb.dataset.base;
+  }));
+  box.querySelectorAll(".plan-btn").forEach(b=>b.addEventListener("click", async ()=>{
+    box.querySelectorAll(".plan-btn").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+    document.getElementById("planInner").innerHTML='<div class="plan-load">calculando el mejor plan…</div>';
+    try{
+      const r=await fetch("/api/plan/"+CITY.id+"?modo="+baseModo+"&n="+b.dataset.n);
+      renderPlan((await r.json()).plan);
+    }catch(e){ document.getElementById("planInner").innerHTML='<div class="plan-load">error, reintenta</div>'; }
+  }));
+}
 // plan de cobertura
 document.querySelectorAll(".plan-btn").forEach(b=>{
   b.addEventListener("click", async ()=>{
@@ -156,8 +204,7 @@ document.getElementById("planClear").addEventListener("click", ()=>{
 });
 
 function renderPlan(plan){
-  const box=document.getElementById("planResult");
-  document.getElementById("planClear").style.display="inline-block";
+  const box=document.getElementById("planInner");
   gapLayer.clearLayers();
   let html='<div class="plan-title">Plan óptimo — cubre '+(plan[plan.length-1]?.pob_acumulada||0).toLocaleString()+' personas</div>';
   plan.forEach((z,i)=>{
