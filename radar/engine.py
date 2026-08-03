@@ -345,6 +345,14 @@ def _marcar_canibalizacion(zonas, radio_km=4.0):
             zonas[g[0]]["alternativas"] = []
     return zonas
 
+_PUNTOS_FIS = []
+try:
+    import json as _json, os as _os
+    _pf = _json.load(open(_os.path.join(_os.path.dirname(__file__), "..", "data", "puntos_fisicos_conocidos.json"), encoding="utf-8"))
+    _PUNTOS_FIS = _pf.get("puntos", [])
+except Exception:
+    _PUNTOS_FIS = []
+
 def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
     """Score /12 con 4 categorias iguales para ambos modos (cada una /3):
     1) DEMANDA (consumo: pedidos Rappi/Uber/propios o potencial poblacional)
@@ -381,12 +389,12 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
     c_nc = 3 if cov < 0.15 else (2 if cov < 0.5 else 1)
 
     if modo == "fisico":
-        # punto EXCEPCIONAL comercial (mucho trafico/entorno + nivel alto):
-        # la canibalizacion casi no importa -> un storefront premium vale aunque
-        # ya tengas delivery cerca (Masaryk, Condesa, Durango...).
         excepcional = (c_traf == 3 and nse >= 0.82)
+        mind_k = min((haversine_km(lat, lon, k["lat"], k["lon"]) for k in city_kitchens), default=99)
         if excepcional:
-            c_nc = max(c_nc, 3)   # no lo castigues por canibalizar; es punto joya
+            c_nc = max(c_nc, 3)   # punto joya: no lo castigues por canibalizar
+        elif mind_k < 4.0:
+            c_nc = 1              # zona normal dentro del alcance de una cocina -> canibaliza
     total = c_dem + c_traf + c_niv + c_nc
     hub = nhub >= 1
     return {"c_dem": c_dem, "c_traf": c_traf, "c_niv": c_niv, "c_nc": c_nc,
@@ -431,11 +439,19 @@ def discover_fisico(cid, cfg):
         if any(haversine_km(z["lat"], z["lon"], w["lat"], w["lon"]) < 2.5 for w in zonas):
             continue
         zonas.append(z)
+    # inyectar PUNTOS FISICOS CONOCIDOS (Masaryk, Durango...) para que siempre se evaluen
+    from .censo import census_at as _cat
+    _known_latlon = {(round(p["lat"],4), round(p["lon"],4)) for p in _PUNTOS_FIS}
+    for p in _PUNTOS_FIS:
+        cc = _cat(p["lat"], p["lon"])
+        if not any(round(z["lat"],4)==round(p["lat"],4) and round(z["lon"],4)==round(p["lon"],4) for z in zonas):
+            zonas.append({"lat": p["lat"], "lon": p["lon"], "nse": cc["nse"],
+                          "pob": cc["pob"], "estrato": cc["estrato"], "_known": p["name"]})
     out = []
     for z in zonas:
         la, lo, nse = z["lat"], z["lon"], z["nse"]
         s = scores12_nal(la, lo, cid, kk, "fisico")
-        nombre = _nombre_hueco_nal(la, lo)
+        nombre = z.get("_known") or _nombre_hueco_nal(la, lo)
         hint = _marca_hint_at(la, lo)
         marca = hint or ("Avocalia" if nse >= 0.86 else "Green House")
         out.append({"lat": round(la, 5), "lon": round(lo, 5), "nombre": nombre,
@@ -446,6 +462,7 @@ def discover_fisico(cid, cfg):
                     "hub": s["hub"], "pob": z["pob"], "nse": round(nse, 3),
                     "cobertura": s["cov"], "neto_pct": net_uncovered_pct_nal(la, lo, kk),
                     "competidores": s["competidores"], "marca_sugerida": marca,
+                    "_known": z.get("_known"),
                     "porque": "Area de nivel alto sin cocina propia; apta para punto fisico."})
     out.sort(key=lambda z: z["total"], reverse=True)
     seen, ded = set(), []
@@ -458,7 +475,10 @@ def discover_fisico(cid, cfg):
 def discover_gaps_ciudad(cid, cfg, modo='delivery'):
     fis_all = discover_fisico(cid, cfg)
     # PUNTO FISICO = solo buenos storefronts (score alto)
-    fuertes = [z for z in fis_all if z["total"] >= 9 and z["neto_pct"] >= 40]
+    fuertes = [z for z in fis_all
+               if z.get("_known")                            # puntos conocidos SIEMPRE aparecen
+               or (z["total"] >= 9 and z["c_dem"] >= 2
+                   and (z["c_niv"] == 3 or z["c_dem"] == 3))]
     if modo == "fisico":
         return _marcar_canibalizacion(fuertes)
     # delivery se evalua con SU PROPIA logica (contra cocinas reales), sin asumir
@@ -543,6 +563,7 @@ def _marca_hint_at(lat, lon):
     return best
 
 def net_uncovered_pct_nal(lat, lon, city_kitchens, radius_km=4.0, n=200):
+    import random as _r; _r.seed(int((lat*1000)%100000)*100000+int((lon*1000)%100000))
     from . import nacional
     import random
     unc = 0

@@ -1,0 +1,19 @@
+{
+  "puntos": [
+    {
+      "name": "Av. Presidente Masaryk (Polanco)",
+      "lat": 19.433,
+      "lon": -99.196
+    },
+    {
+      "name": "Álvaro Obregón (Roma Norte)",
+      "lat": 19.4165,
+      "lon": -99.1655
+    },
+    {
+      "name": "Lomas Virreyes",
+      "lat": 19.427,
+      "lon": -99.21
+    }
+  ]
+}
