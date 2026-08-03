@@ -36,7 +36,7 @@ def _load_kitchens():
         ciudad = None
         for cid, c in CIUDADES.items():
             if _in_bbox(lat, lon, c["bbox"]): ciudad = cid; break
-        radio = 1.5 if "AMSTERDAM" in nombre.upper() or "309" in nombre else 4.0
+        radio = 1.5 if "AMSTERDAM" in nombre.upper() or "309" in nombre else 3.0
         out.append({"nombre": nombre, "lat": lat, "lon": lon, "ciudad": ciudad,
                     "radio_km": radio, "poly": None})
     return out

@@ -393,7 +393,7 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
         mind_k = min((haversine_km(lat, lon, k["lat"], k["lon"]) for k in city_kitchens), default=99)
         if excepcional:
             c_nc = max(c_nc, 3)   # punto joya: no lo castigues por canibalizar
-        elif mind_k < 4.0:
+        elif mind_k < 3.0:
             c_nc = 1              # zona normal dentro del alcance de una cocina -> canibaliza
     total = c_dem + c_traf + c_niv + c_nc
     hub = nhub >= 1
@@ -480,7 +480,7 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
                or (z["total"] >= 9 and z["c_dem"] >= 2
                    and (z["c_niv"] == 3 or z["c_dem"] == 3))]
     if modo == "fisico":
-        return _marcar_canibalizacion(fuertes)
+        return _marcar_canibalizacion(fuertes, radio_km=2.5)
     # delivery se evalua con SU PROPIA logica (contra cocinas reales), sin asumir
     # nada de puntos fisicos potenciales. Solo evitamos repetir los fisicos fuertes.
     _fis_pts = [(z["lat"], z["lon"]) for z in fuertes]
