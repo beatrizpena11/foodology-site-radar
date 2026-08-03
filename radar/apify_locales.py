@@ -32,12 +32,10 @@ def traer_locales(max_items=50):
     # endpoint que corre el actor y regresa los items en una sola llamada
     endpoint = (f"https://api.apify.com/v2/acts/{APIFY_ACTOR}"
                 f"/run-sync-get-dataset-items?token={APIFY_TOKEN}")
-    # el input varia por actor; los "by search URL" aceptan startUrls o searchUrls
+    # input para azzouzana/inmuebles24-scraper-pro-by-search-url: usa "startUrl" (singular)
     payload = {
-        "searchUrls": [{"url": INMUEBLES24_URL}],
-        "startUrls": [{"url": INMUEBLES24_URL}],
+        "startUrl": INMUEBLES24_URL,
         "maxItems": max_items,
-        "proxyConfiguration": {"useApifyProxy": True},
     }
     try:
         items = _post(endpoint, payload)
