@@ -36,11 +36,11 @@ function renderCity(){
   // red propia
   CITY.network.forEach(p=>{
     const r=(p.radio_km||3.0)*1000;
+    const kpop=`<b>🍳 ${p.nombre}</b><br>Cocina activa · cobertura ${p.radio_km} km`;
     L.circle([p.lat,p.lon],{radius:r,color:"#35C2B1",weight:1,opacity:.3,
-      fillColor:"#35C2B1",fillOpacity:.06}).addTo(ringLayer);
-    L.circleMarker([p.lat,p.lon],{radius:5,color:"#0E141B",weight:1.5,
-      fillColor:"#35C2B1",fillOpacity:1}).addTo(netLayer)
-     .bindPopup(`<b>${p.nombre}</b><br>cocina · cobertura ${p.radio_km} km`);
+      fillColor:"#35C2B1",fillOpacity:.06}).addTo(ringLayer).bindPopup(kpop);
+    L.circleMarker([p.lat,p.lon],{radius:6,color:"#0E141B",weight:1.5,
+      fillColor:"#35C2B1",fillOpacity:1}).addTo(netLayer).bindPopup(kpop);
   });
   document.getElementById("netCount").textContent = CITY.network.length+" cocinas · "+CITY.gaps.length+" huecos";
   const modoTxt = (MODO==="fisico") ? "PUNTO FÍSICO" : "DELIVERY / DARK KITCHEN";
@@ -50,17 +50,19 @@ function renderCity(){
   const gl=document.getElementById("gapList"); gl.innerHTML="";
   const gapMarkers={};
   CITY.gaps.forEach((g,i)=>{
-    L.circle([g.lat,g.lon],{radius:3000,color:"#F2A63B",weight:1.5,opacity:.9,
-      fillColor:"#F2A63B",fillOpacity:.12}).addTo(gapLayer);
     const comp=(g.competidores&&g.competidores.length)?g.competidores.join(", "):"ninguno cerca";
     const turbo=g.hub?'<br><span class="turbo">⚡ aquí puedes prender Turbo</span>':"";
-    const m=L.circleMarker([g.lat,g.lon],{radius:6,color:"#1A1206",weight:1.5,
-      fillColor:"#F2A63B",fillOpacity:1}).addTo(gapLayer)
-      .bindPopup(`<b>#${i+1} · ${g.nombre}</b> — <b>${g.total}/12</b><br>`+
-        `FT ${g.ft} · Nivel ${g.pop} · Rest.parecidos ${g.comp} · NoCanib ${g.canib}<br>`+
-        `población ~${(g.pob||0).toLocaleString()} · cobertura ${g.cobertura} · <b>hueco neto ${g.neto_pct}%</b><br>`+
-        `restaurantes parecidos: ${comp}${turbo}<br><b>Sugerido: ${g.marca_sugerida}</b>`+
-        ((g.alternativas&&g.alternativas.length)?`<br><span style="color:#F2C94C">⚄ Se canibaliza con: ${g.alternativas.join(", ")} (elige una)</span>`:""));
+    const expTxt=(g.explica||[]).map(e=>`${e.label}: <b>${e.valor.toUpperCase()} (${e.n}/3)</b>`).join("<br>");
+    const gpop=`<b>#${i+1} · ${g.nombre}</b> — <b>${g.total}/12</b><br>`+
+        `<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span><br>`+
+        expTxt+`<br>`+
+        `hueco neto <b>${g.neto_pct}%</b> · pob ~${(g.pob||0).toLocaleString()}${turbo}`+
+        ((g.alternativas&&g.alternativas.length)?`<br><span style="color:#F2C94C">⚄ Compite con: ${g.alternativas.join(", ")} (elige una)</span>`:"");
+    // circulo grande CON popup (para que al clic en cualquier parte diga que es)
+    L.circle([g.lat,g.lon],{radius:3000,color:"#F2A63B",weight:1.5,opacity:.9,
+      fillColor:"#F2A63B",fillOpacity:.12}).addTo(gapLayer).bindPopup(gpop);
+    const m=L.circleMarker([g.lat,g.lon],{radius:7,color:"#1A1206",weight:1.5,
+      fillColor:"#F2A63B",fillOpacity:1}).addTo(gapLayer).bindPopup(gpop);
     m.bindTooltip(`${i+1}`,{permanent:true,direction:"center",className:"gap-num"});
     gapMarkers[i]=m;
 

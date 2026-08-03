@@ -313,17 +313,24 @@ def _explica_componentes(z):
 def _marcar_canibalizacion(zonas, radio_km=4.0):
     """Agrupa huecos que se canibalizan entre si (<radio_km) y les pone
     'grupo' (id) y 'alternativas' (nombres de los otros del grupo)."""
-    grupos = []  # cada grupo = lista de indices
-    for i, z in enumerate(zonas):
-        col = None
-        for g in grupos:
-            # entra al grupo SOLO si se canibaliza con TODAS (no por cadena)
-            if all(haversine_km(z["lat"], z["lon"], zonas[j]["lat"], zonas[j]["lon"]) < radio_km for j in g):
-                col = g; break
-        if col is None:
-            grupos.append([i])
-        else:
-            col.append(i)
+    # agrupamiento por CADENA (union-find): si A toca B y B toca C -> todas juntas
+    n = len(zonas)
+    padre = list(range(n))
+    def find(x):
+        while padre[x] != x:
+            padre[x] = padre[padre[x]]; x = padre[x]
+        return x
+    def une(a, b):
+        padre[find(a)] = find(b)
+    for i in range(n):
+        for j in range(i+1, n):
+            if haversine_km(zonas[i]["lat"], zonas[i]["lon"], zonas[j]["lat"], zonas[j]["lon"]) < radio_km:
+                une(i, j)
+    from collections import defaultdict
+    _g = defaultdict(list)
+    for i in range(n):
+        _g[find(i)].append(i)
+    grupos = list(_g.values())
     for z in zonas:
         _explica_componentes(z)
     vis = 0  # contador solo de grupos visibles (2+ zonas)
