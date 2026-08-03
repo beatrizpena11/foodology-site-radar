@@ -136,6 +136,16 @@ def _evaluar_locales(locales):
         kk = nacional.kitchens_ciudad(cid)
         from radar.engine import scores12_nal, _marca_hint_at, recommend_marca
         sc = scores12_nal(lat, lon, cid, kk, "fisico")
+        # descuento por cocina cercana (ya lo cubres) salvo punto excepcional comercial
+        import math as _m
+        def _kmm(a,b,c,d):
+            R=6371;p1,p2=_m.radians(a),_m.radians(c)
+            return 2*R*_m.asin(_m.sqrt(_m.sin(_m.radians(c-a)/2)**2+_m.cos(p1)*_m.cos(p2)*_m.sin(_m.radians(d-b)/2)**2))
+        cerca = min((_kmm(lat,lon,k["lat"],k["lon"]) for k in kk), default=99) < 1.5
+        excepc = (sc["c_traf"] == 3 and sc["nse"] >= 0.82)
+        if cerca and not excepc and sc["c_nc"] > 1:
+            sc["c_nc"] = 1
+            sc["total"] = sc["c_dem"] + sc["c_traf"] + sc["c_niv"] + sc["c_nc"]
         marca, _ = recommend_marca({"marca_hint": _marca_hint_at(lat, lon),
                                     "comercial_activity": sc["dem"],
                                     "ingreso_premium": sc["nse"]}, CFG)

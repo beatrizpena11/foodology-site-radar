@@ -359,36 +359,39 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
     ci = competitors_near(lat, lon)
     nhub = nacional.hub_count(lat, lon, 3.0)
 
-    # 1) DEMANDA (consumo)
-    dem_ord = nacional.order_demand_at(lat, lon, cid)
-    pobn = min(1.0, cen["pob"] / 8000.0)
-    dsig = max(dem_ord, pobn)
-    c_dem = 3 if dsig >= 0.5 else (2 if dsig >= 0.25 else 1)
+    # 1) DEMANDA (consumo real de delivery: ordenes tipo Rappi, NO poblacion)
+    #    mas ordenes = mas demanda. La poblacion NO cuenta como demanda.
+    dem_ord = nacional.demand_rappi_at(lat, lon, cid)   # ordenes reales Rappi
+    c_dem = 3 if dem_ord >= 0.5 else (2 if dem_ord >= 0.15 else 1)
 
-    # 2) TRAFICO / ENTORNO (hubs; + restaurantes + oficinas en fisico)
-    hub_sig = min(1.0, nhub / 3.0)
+    # 2) TRAFICO / ENTORNO: poblacion + hubs + oficinas (data propia, SIN nivel)
+    nse = cen["nse"]
+    pobn = min(1.0, cen["pob"] / 8000.0)             # cuanta gente (tal cual, sin ponderar)
+    hub_sig = min(1.0, nhub / 3.0)                    # hubs turbo cerca
     sucur = ci.get("sucursales", len(ci.get("lista", [])))
-    if modo == "fisico":
-        rest_sig = min(1.0, ci["marcas"] / 2.0)
-        ofi_sig = min(1.0, (nhub + sucur) / 6.0)     # oficinas ~ intensidad comercial
-        tsig = 0.5 * hub_sig + 0.3 * rest_sig + 0.2 * ofi_sig
-    else:
-        tsig = hub_sig
-    c_traf = 3 if tsig >= 0.6 else (2 if tsig >= 0.3 else 1)
+    ofi_sig = min(1.0, (nhub + sucur) / 5.0)         # oficinas ~ intensidad comercial
+    tsig = 0.45*pobn + 0.30*hub_sig + 0.25*ofi_sig
+    c_traf = 3 if tsig >= 0.55 else (2 if tsig >= 0.28 else 1)
 
     # 3) NIVEL (INEGI, nse fino)
-    nse = cen["nse"]
     c_niv = 3 if nse >= 0.82 else (2 if nse >= 0.70 else 1)
 
     # 4) NO-CANIBALIZACION (vs cocinas reales)
     cov = nacional.coverage_at(lat, lon, city_kitchens)
     c_nc = 3 if cov < 0.15 else (2 if cov < 0.5 else 1)
 
+    if modo == "fisico":
+        # punto EXCEPCIONAL comercial (mucho trafico/entorno + nivel alto):
+        # la canibalizacion casi no importa -> un storefront premium vale aunque
+        # ya tengas delivery cerca (Masaryk, Condesa, Durango...).
+        excepcional = (c_traf == 3 and nse >= 0.82)
+        if excepcional:
+            c_nc = max(c_nc, 3)   # no lo castigues por canibalizar; es punto joya
     total = c_dem + c_traf + c_niv + c_nc
     hub = nhub >= 1
     return {"c_dem": c_dem, "c_traf": c_traf, "c_niv": c_niv, "c_nc": c_nc,
             "total": total, "rank": total + (0.3 if hub else 0),
-            "hub": hub, "nhub": nhub, "dem": round(dsig, 2), "cov": round(cov, 2),
+            "hub": hub, "nhub": nhub, "dem": round(dem_ord, 2), "cov": round(cov, 2),
             "pob": cen["pob"], "nse": nse, "competidores": ci["lista"],
             # compat con codigo viejo:
             "ft": c_dem, "pop": c_niv, "comp": c_traf, "canib": c_nc}

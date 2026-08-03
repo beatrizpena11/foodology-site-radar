@@ -147,6 +147,52 @@ def coverage_at(lat, lon, city_kitchens):
             cov = max(cov, 1 - d/k["radio_km"])
     return cov
 
+
+
+# ================= DEMANDA REAL (Rappi, map 4: ordenes por zona) =================
+try:
+    _RAPPI = json.load(open(os.path.join(_DIR, "rappi_demanda.json"), encoding="utf-8"))
+except Exception:
+    _RAPPI = []
+_RAPPI_POLY = []
+if _HAS_SHAPELY:
+    for z in _RAPPI:
+        try:
+            _RAPPI_POLY.append({"orders": z["orders"], "clat": z["clat"], "clon": z["clon"],
+                                "poly": shape(z["geojson"])})
+        except Exception:
+            pass
+_RAPPI_SCALE = {}
+def _rappi_scale(cid):
+    if cid in _RAPPI_SCALE:
+        return _RAPPI_SCALE[cid]
+    bb = CIUDADES[cid]["bbox"]
+    vals = sorted(z["orders"] for z in _RAPPI_POLY
+                  if bb[0] <= z["clat"] <= bb[2] and bb[1] <= z["clon"] <= bb[3])
+    sc = vals[int(len(vals)*0.9)] if vals else 1.0
+    _RAPPI_SCALE[cid] = sc or 1.0
+    return _RAPPI_SCALE[cid]
+
+def demand_rappi_at(lat, lon, cid):
+    """Demanda real de delivery (ordenes Rappi por zona, map 4), normalizada 0-1."""
+    if not _RAPPI_POLY:
+        return 0.0
+    pt = Point(lon, lat)
+    orders = None
+    for z in _RAPPI_POLY:
+        try:
+            if z["poly"].contains(pt):
+                orders = z["orders"]; break
+        except Exception:
+            pass
+    if orders is None:   # si no cae en ninguna zona, la mas cercana <2km
+        best, bd = None, 2.0
+        for z in _RAPPI_POLY:
+            d = _km(lat, lon, z["clat"], z["clon"])
+            if d < bd: bd, best = d, z["orders"]
+        orders = best or 0.0
+    return min(1.0, orders / _rappi_scale(cid))
+
 # --- nombre por microzona de ordenes mas cercana ---
 def nearest_micro(lat, lon, radius_km=1.6):
     best, bd = None, radius_km
