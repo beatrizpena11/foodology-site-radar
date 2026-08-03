@@ -513,7 +513,7 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
                     "pob": s["pob"], "nse": s["nse"], "cobertura": s["cov"],
                     "neto_pct": net_uncovered_pct_nal(z["lat"], z["lon"], kk),
                     "competidores": s["competidores"],
-                    "marca_sugerida": marca, "porque": why})
+                    "marca_sugerida": "", "porque": why})
     # umbral segun modo
     if modo == "fisico":
         out = [z for z in out if z["total"] >= 9 and z["neto_pct"] >= 45]

@@ -54,7 +54,7 @@ function renderCity(){
     const turbo=g.hub?'<br><span class="turbo">⚡ aquí puedes prender Turbo</span>':"";
     const expTxt=(g.explica||[]).map(e=>`${e.label}: <b>${e.valor.toUpperCase()} (${e.n}/3)</b>`).join("<br>");
     const gpop=`<b>#${i+1} · ${g.nombre}</b> — <b>${g.total}/12</b><br>`+
-        `<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span><br>`+
+        (g.marca_sugerida?`<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span><br>`:"")+
         expTxt+`<br>`+
         `hueco neto <b>${g.neto_pct}%</b> · pob ~${(g.pob||0).toLocaleString()}${turbo}`+
         ((g.alternativas&&g.alternativas.length)?`<br><span style="color:#F2C94C">⚄ Compite con: ${g.alternativas.join(", ")} (elige una)</span>`:"");
@@ -74,7 +74,7 @@ function renderCity(){
       <div class="ghead">
         <span class="rank">${String(i+1).padStart(2,"0")}</span>
         <div class="gtitle"><span class="gname">${g.nombre}</span> ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}
-          <span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span></div>
+          ${g.marca_sugerida?`<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span>`:""}</div>
         <span class="gscore">${g.total}<small>/12</small></span>
         <span class="chev">▸</span>
       </div>
