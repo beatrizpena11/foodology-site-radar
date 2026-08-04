@@ -404,7 +404,8 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
     m_dem = round(min(10.0, dem_ord * 10), 1)                    # demanda 0-10
     m_traf = round(min(10.0, tsig * 10), 1)                       # trafico 0-10
     m_niv = round(min(10.0, max(0.0, (nse - 0.45) / 0.50 * 10)), 1)  # nivel 0-10 (nse 0.45-0.95)
-    m_nc = round(max(0.0, (1 - cov) * 10), 1)                    # no-canib 0-10 (49% cov -> 5.1)
+    neto_area = net_uncovered_pct_nal(lat, lon, city_kitchens)   # % SIN cubrir del AREA (mismo que hueco neto)
+    m_nc = round(neto_area / 10.0, 1)                            # no-canib 0-10 (coherente con hueco neto)
     # ordenes Rappi 8sem crudas de la zona
     ordenes_rappi = nacional.rappi_orders_at(lat, lon, cid) if hasattr(nacional, "rappi_orders_at") else None
     info = {
@@ -415,7 +416,7 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
         "nivel": {"score10": m_niv,
                   "detalle": f"nivel socioeconómico {nse:.2f}/1.0 (INEGI), estrato {cen.get('estrato','?')}"},
         "nocanib": {"score10": m_nc,
-                    "detalle": f"{cov:.0%} de la zona ya cubierta · cocina más cercana: {dcloser[1]} a {dcloser[0]:.1f} km"},
+                    "detalle": f"{100-neto_area}% de la zona ya cubierta por tu red · cocina más cercana: {dcloser[1]} a {dcloser[0]:.1f} km"},
     }
     return {"c_dem": c_dem, "c_traf": c_traf, "c_niv": c_niv, "c_nc": c_nc,
             "m_dem": m_dem, "m_traf": m_traf, "m_niv": m_niv, "m_nc": m_nc,
@@ -505,7 +506,7 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
                or (z["total"] >= 9 and z["c_dem"] >= 2
                    and (z["c_niv"] == 3 or z["c_dem"] == 3))]
     if modo == "fisico":
-        return _marcar_canibalizacion(fuertes, radio_km=2.5)
+        return _marcar_canibalizacion(fuertes, radio_km=3.0)
     # delivery se evalua con SU PROPIA logica (contra cocinas reales), sin asumir
     # nada de puntos fisicos potenciales. Solo evitamos repetir los fisicos fuertes.
     _fis_pts = [(z["lat"], z["lon"]) for z in fuertes]
@@ -609,10 +610,19 @@ except Exception:
     _GMV = {}
 
 def _gmv_match(nombre):
-    """Cruza el nombre de la cocina (kitchens_geo) con los datos de GMV del warehouse."""
-    n = nombre.upper()
+    """Cruza el nombre de la cocina con el GMV del warehouse.
+    Match estricto por nombre limpio (quita el numero prefijo), evitando falsos
+    positivos como 'SAN' (San Angel) contra 'San Antonio' de Narvarte."""
+    import re as _re
+    n = _re.sub(r'^\d+\s+', '', nombre.upper()).strip()   # quita "01 ", "12 "
+    n = _re.split(r'[(/]', n)[0].strip()                    # corta parentesis/parte extra
     for k, v in _GMV.items():
-        if k in n or n in k or k.split()[0] in n:
+        # match solo si el nombre limpio ES la llave (o empieza por ella)
+        if n == k or n.startswith(k + " ") or k == n.split()[0] and len(n.split()[0]) > 4:
+            return v
+    # segundo intento: la llave completa aparece como palabra al inicio
+    for k, v in _GMV.items():
+        if n.startswith(k):
             return v
     return None
 
