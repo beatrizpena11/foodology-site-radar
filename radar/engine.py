@@ -401,14 +401,27 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
     # ===== ESCALA 0-10 por metrica (mas fina) + info cruda de soporte =====
     dcloser = min(((haversine_km(lat, lon, k["lat"], k["lon"]), k["nombre"]) for k in city_kitchens),
                   default=(99, "ninguna"))
-    m_dem = round(min(10.0, dem_ord * 10), 1)                    # demanda 0-10
+    # DEMANDA INCREMENTAL DELIVERY: pedidos de la zona que AUN no capturas
+    #   (demanda Rappi * fraccion sin cubrir). Si ya lo cubres, el incremental es bajo.
+    cov_para_inc = nacional.coverage_at(lat, lon, city_kitchens)
+    m_dem_inc = round(min(10.0, dem_ord * 10 * (1 - cov_para_inc * 0.7)), 1)
+    m_dem = round(min(10.0, dem_ord * 10), 1)                    # demanda delivery bruta 0-10
     m_traf = round(min(10.0, tsig * 10), 1)                       # trafico 0-10
     m_niv = round(min(10.0, max(0.0, (nse - 0.45) / 0.50 * 10)), 1)  # nivel 0-10 (nse 0.45-0.95)
+    # DEMANDA RETAIL: fuerza de calle = trafico peatonal + nivel + comercios (restaurantes)
+    #   aqui Masaryk/Alvaro Obregon brillan (corredor comercial de gente caminando)
+    pob_ret = min(1.0, cen["pob"] / 8000.0)
+    rest_ret = min(1.0, ci["marcas"] / 2.0)
+    m_retail = round(min(10.0, (0.45*pob_ret + 0.30*min(1.0, nhub/3.0) + 0.25*rest_ret) * (nse/0.85) * 10), 1)
     neto_area = net_uncovered_pct_nal(lat, lon, city_kitchens)   # % SIN cubrir del AREA (mismo que hueco neto)
     m_nc = round(neto_area / 10.0, 1)                            # no-canib 0-10 (coherente con hueco neto)
     # ordenes Rappi 8sem crudas de la zona
     ordenes_rappi = nacional.rappi_orders_at(lat, lon, cid) if hasattr(nacional, "rappi_orders_at") else None
     info = {
+        "demanda_delivery": {"score10": m_dem_inc,
+                    "detalle": (f"{int(ordenes_rappi):,} órdenes Rappi/8sem en la zona; ya cubres {cov_para_inc:.0%}, incremental real ~{m_dem_inc}/10") if ordenes_rappi else f"densidad de pedidos {dem_ord:.0%} vs zona top, descontando cobertura actual"},
+        "demanda_retail": {"score10": m_retail,
+                    "detalle": f"{cen['pob']:,} hab caminando · {ci['marcas']} comercios parecidos · nivel {nse:.2f} → fuerza de calle para tienda"},
         "demanda": {"score10": m_dem,
                     "detalle": f"{int(ordenes_rappi):,} órdenes Rappi/8sem en la zona".replace(",", ",") if ordenes_rappi else f"densidad de pedidos {dem_ord:.0%} vs zona top"},
         "trafico": {"score10": m_traf,
@@ -419,8 +432,9 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
                     "detalle": f"{100-neto_area}% de la zona ya cubierta por tu red · cocina más cercana: {dcloser[1]} a {dcloser[0]:.1f} km"},
     }
     return {"c_dem": c_dem, "c_traf": c_traf, "c_niv": c_niv, "c_nc": c_nc,
-            "m_dem": m_dem, "m_traf": m_traf, "m_niv": m_niv, "m_nc": m_nc,
-            "score10": round((m_dem + m_traf + m_niv + m_nc) / 4, 1),
+            "m_dem": m_dem, "m_dem_inc": m_dem_inc, "m_retail": m_retail,
+            "m_traf": m_traf, "m_niv": m_niv, "m_nc": m_nc,
+            "score10": round((m_dem_inc + m_retail + m_niv + m_nc) / 4, 1),
             "info": info,
             "total": total, "rank": total + (0.3 if hub else 0),
             "hub": hub, "nhub": nhub, "dem": round(dem_ord, 2), "cov": round(cov, 2),
@@ -482,7 +496,8 @@ def discover_fisico(cid, cfg):
                     "_modo": "fisico", "nhub": s["nhub"],
                     "total": s["total"], "c_dem": s["c_dem"], "c_traf": s["c_traf"],
                     "c_niv": s["c_niv"], "c_nc": s["c_nc"],
-                    "m_dem": s["m_dem"], "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
+                    "m_dem": s["m_dem"], "m_dem_inc": s["m_dem_inc"], "m_retail": s["m_retail"],
+                    "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
                     "score10": s["score10"], "info": s["info"],
                     "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
                     "hub": s["hub"], "pob": z["pob"], "nse": round(nse, 3),
@@ -557,7 +572,8 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
         out.append({"lat": z["lat"], "lon": z["lon"], "nombre": nombre,
                     "total": s["total"], "c_dem": s["c_dem"], "c_traf": s["c_traf"],
                     "c_niv": s["c_niv"], "c_nc": s["c_nc"],
-                    "m_dem": s["m_dem"], "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
+                    "m_dem": s["m_dem"], "m_dem_inc": s["m_dem_inc"], "m_retail": s["m_retail"],
+                    "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
                     "score10": s["score10"], "info": s["info"],
                     "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
                     "hub": s["hub"], "nhub": s.get("nhub", 0),
@@ -635,27 +651,39 @@ def evaluar_cocinas(cid, cfg):
         s = scores12_nal(k["lat"], k["lon"], cid, kk, "fisico")
         gmv = _gmv_match(k["nombre"])
         out.append({"nombre": k["nombre"], "lat": k["lat"], "lon": k["lon"],
-                    "m_dem": s["m_dem"], "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
+                    "m_dem": s["m_dem"], "m_retail": s.get("m_retail",0),
+                    "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
                     "gmv_mes": gmv["gmv_mes"] if gmv else None,
                     "ordenes_dia": gmv["ordenes_dia"] if gmv else None,
                     "ticket": gmv["ticket"] if gmv else None})
     return out
 
 def tamano_oportunidad(hueco, cocinas):
-    """Encuentra la cocina mas PARECIDA al hueco (por las 4 metricas) y estima
-    el tamaño de oportunidad usando su GMV/ordenes reales."""
+    """Cocina mas PARECIDA por perfil (nivel, demanda, retail) + en que se parece
+    y en que NO, para que el usuario juzgue sin creer a ciegas."""
     con_gmv = [c for c in cocinas if c.get("gmv_mes")]
     if not con_gmv:
         return None
+    # comparar por PERFIL: nivel, demanda delivery, retail (no solo # ordenes)
+    def perfil(x):
+        return [x.get("m_niv",0), x.get("m_dem",0), x.get("m_retail", x.get("m_traf",0))]
     def dist(c):
-        return ((hueco["m_dem"]-c["m_dem"])**2 + (hueco["m_traf"]-c["m_traf"])**2
-                + (hueco["m_niv"]-c["m_niv"])**2)**0.5   # sin no-canib (esa es del hueco)
+        ph, pc = perfil(hueco), perfil(c)
+        return sum((a-b)**2 for a,b in zip(ph,pc))**0.5
     similar = min(con_gmv, key=dist)
-    # ajuste por demanda relativa (si el hueco tiene mas/menos demanda que la cocina parecida)
-    factor = (hueco["m_dem"] + 1) / (similar["m_dem"] + 1)
-    factor = max(0.5, min(1.5, factor))
+    factor = max(0.5, min(1.5, (hueco.get("m_dem",0)+1)/(similar.get("m_dem",0)+1)))
+    # en que se parece y en que no (diferencia por metrica)
+    etiquetas=[("nivel","m_niv"),("demanda delivery","m_dem"),("retail/calle","m_retail")]
+    parecidos, distintos = [], []
+    for lbl,k in etiquetas:
+        dif=abs(hueco.get(k,0)-similar.get(k,0))
+        if dif<=1.5: parecidos.append(f"{lbl} (ambos ~{hueco.get(k,0):.0f}/10)")
+        else: distintos.append(f"{lbl} (hueco {hueco.get(k,0):.0f} vs {similar['nombre'].split()[-1]} {similar.get(k,0):.0f})")
     return {"cocina_parecida": similar["nombre"],
-            "gmv_estimado": int(similar["gmv_mes"] * factor),
-            "ordenes_estimadas": int(similar["ordenes_dia"] * factor),
+            "gmv_estimado": int(similar["gmv_mes"]*factor),
+            "ordenes_estimadas": int(similar["ordenes_dia"]*factor),
             "cocina_gmv": similar["gmv_mes"], "cocina_ordenes": similar["ordenes_dia"],
-            "similitud": round(10 - min(10, dist(similar)*1.5), 1)}
+            "cocina_ticket": similar.get("ticket"),
+            "similitud": round(10-min(10,dist(similar)*1.2),1),
+            "se_parece_en": parecidos, "difiere_en": distintos,
+            "base": "Comparado por perfil: nivel socioeconómico, demanda delivery y fuerza retail (no solo # de órdenes)."}

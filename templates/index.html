@@ -33,6 +33,18 @@
       <h2>Huecos detectados</h2>
       <p class="sub" id="gapSub">rankeados por score /12</p>
       <div id="planResult"></div>
+      <button id="glosBtn" class="glos-btn">📖 ¿Cómo se miden las métricas?</button>
+      <div id="glosario" class="glosario" style="display:none">
+        <table class="glos-tbl">
+          <tr><th>Métrica</th><th>Qué mide</th><th>Cómo se calcula</th></tr>
+          <tr><td><b>Demanda delivery</b></td><td>Pedidos NUEVOS que capturarías</td><td>Órdenes reales de Rappi en la zona (8 sem), descontando lo que ya cubres con cocinas cercanas</td></tr>
+          <tr><td><b>Demanda retail</b></td><td>Fuerza como tienda de calle</td><td>Tráfico peatonal (población) + comercios parecidos + hubs, ponderado por nivel</td></tr>
+          <tr><td><b>Nivel socioeconómico</b></td><td>Poder adquisitivo de la zona</td><td>Índice del Censo INEGI (0.45–0.95) escalado a 0–10</td></tr>
+          <tr><td><b>No te canibaliza</b></td><td>Qué tan libre está de tu red</td><td>% del área SIN cubrir por tus cocinas actuales (radio 3 km)</td></tr>
+          <tr><td><b>Score /10</b></td><td>Calidad global del punto</td><td>Promedio de las 4 métricas de arriba</td></tr>
+          <tr><td><b>Tamaño oportunidad</b></td><td>Cuánto podría facturar</td><td>GMV y órdenes de tu cocina más parecida (por nivel + demanda + retail), ajustado por demanda</td></tr>
+        </table>
+      </div>
     </div>
     <ol class="gaps" id="gapList"></ol>
 

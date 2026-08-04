@@ -15,17 +15,21 @@ function metricRow(label, v, detalle){
 }
 const breakdown = g => {
   const info = g.info||{};
-  return metricRow("Demanda (consumo)", g.m_dem, info.demanda&&info.demanda.detalle)
-       + metricRow("Tráfico / entorno", g.m_traf, info.trafico&&info.trafico.detalle)
+  return metricRow("Demanda delivery (incremental)", g.m_dem_inc, info.demanda_delivery&&info.demanda_delivery.detalle)
+       + metricRow("Demanda retail (calle)", g.m_retail, info.demanda_retail&&info.demanda_retail.detalle)
        + metricRow("Nivel socioeconómico", g.m_niv, info.nivel&&info.nivel.detalle)
        + metricRow("No te canibaliza", g.m_nc, info.nocanib&&info.nocanib.detalle);
 };
 function oportunidadHTML(op){
   if(!op) return "";
+  const par = (op.se_parece_en||[]).length?`<div class="op-line">✓ Se parece en: ${op.se_parece_en.join(", ")}</div>`:"";
+  const dif = (op.difiere_en||[]).length?`<div class="op-line op-dif">✗ Difiere en: ${op.difiere_en.join(", ")}</div>`:"";
   return `<div class="oport">
-    <div class="oport-t">💰 Tamaño de oportunidad</div>
+    <div class="oport-t">💰 Tamaño de oportunidad estimado</div>
     <div class="oport-main">~$${(op.gmv_estimado||0).toLocaleString()}<small>/mes</small> · ${op.ordenes_estimadas} órdenes/día</div>
-    <div class="oport-sub">Se parece a tu cocina <b>${op.cocina_parecida}</b> (${op.cocina_ordenes} ord/día, $${(op.cocina_gmv||0).toLocaleString()}/mes) · similitud ${op.similitud}/10</div>
+    <div class="oport-sub">Estimado comparándolo con tu cocina <b>${op.cocina_parecida}</b> (hoy: ${op.cocina_ordenes} ord/día, $${(op.cocina_gmv||0).toLocaleString()}/mes${op.cocina_ticket?", ticket $"+op.cocina_ticket:""}) · similitud ${op.similitud}/10</div>
+    ${par}${dif}
+    <div class="op-base">${op.base||""}</div>
   </div>`;
 }
 
@@ -93,11 +97,12 @@ function renderCity(){
     const altTxt = (g.alternativas && g.alternativas.length)
       ? `<div class="alt">⚄ Compite con <b>${g.alternativas.join(", ")}</b> — abre solo UNA de estas</div>` : "";
     const grpTag = g.grupo ? `<span class="grp grp-${g.grupo%6}">⚄ grupo ${g.grupo}</span>` : "";
+    const knownTag = g._known ? `<span class="known-tag">★ tú lo agregaste</span>` : "";
     const li=document.createElement("li");
     li.innerHTML=`
       <div class="ghead">
         <span class="rank">${String(i+1).padStart(2,"0")}</span>
-        <div class="gtitle"><span class="gname">${g.nombre}</span> ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}
+        <div class="gtitle"><span class="gname">${g.nombre}</span> ${knownTag} ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}
           ${g.marca_sugerida?`<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span>`:""}</div>
         <span class="gscore">${g.score10!=null?g.score10:g.total}<small>/10</small></span>
         <span class="chev">▸</span>
