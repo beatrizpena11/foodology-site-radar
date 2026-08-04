@@ -396,7 +396,9 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
         elif mind_k < 3.0:
             c_nc = 1              # zona normal dentro del alcance de una cocina -> canibaliza
     total = c_dem + c_traf + c_niv + c_nc
-    hub = nhub >= 1
+    # TURBO: hub a <=1km (super cerca), con su distancia real
+    hub_d = min((haversine_km(lat, lon, h["lat"], h["lon"]) for h in nacional._HUBS), default=99)
+    hub = hub_d < 1.0
 
     # ===== ESCALA 0-10 por metrica (mas fina) + info cruda de soporte =====
     dcloser = min(((haversine_km(lat, lon, k["lat"], k["lon"]), k["nombre"]) for k in city_kitchens),
@@ -437,7 +439,7 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
             "score10": round((m_dem_inc + m_retail + m_niv + m_nc) / 4, 1),
             "info": info,
             "total": total, "rank": total + (0.3 if hub else 0),
-            "hub": hub, "nhub": nhub, "dem": round(dem_ord, 2), "cov": round(cov, 2),
+            "hub": hub, "hub_dist": round(hub_d, 2), "nhub": nhub, "dem": round(dem_ord, 2), "cov": round(cov, 2),
             "pob": cen["pob"], "nse": nse, "competidores": ci["lista"],
             # compat con codigo viejo:
             "ft": c_dem, "pop": c_niv, "comp": c_traf, "canib": c_nc}
@@ -500,7 +502,7 @@ def discover_fisico(cid, cfg):
                     "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
                     "score10": s["score10"], "info": s["info"],
                     "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
-                    "hub": s["hub"], "pob": z["pob"], "nse": round(nse, 3),
+                    "hub": s["hub"], "hub_dist": s.get("hub_dist"), "pob": z["pob"], "nse": round(nse, 3),
                     "cobertura": s["cov"], "neto_pct": net_uncovered_pct_nal(la, lo, kk),
                     "competidores": s["competidores"], "marca_sugerida": marca,
                     "_known": z.get("_known"),
@@ -517,9 +519,10 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
     fis_all = discover_fisico(cid, cfg)
     # PUNTO FISICO = solo buenos storefronts (score alto)
     fuertes = [z for z in fis_all
-               if z.get("_known")                            # puntos conocidos SIEMPRE aparecen
-               or (z["total"] >= 9 and z["c_dem"] >= 2
-                   and (z["c_niv"] == 3 or z["c_dem"] == 3))]
+               if z.get("_known")                                    # puntos conocidos SIEMPRE
+               or (z["total"] >= 9 and z["c_dem"] >= 2               # criterio original (los 8)
+                   and (z["c_niv"] == 3 or z["c_dem"] == 3))
+               or (z.get("m_retail", 0) >= 8.5 and z.get("m_niv", 0) >= 7)]  # + retail MEGA top
     if modo == "fisico":
         return _marcar_canibalizacion(fuertes, radio_km=3.0)
     # delivery se evalua con SU PROPIA logica (contra cocinas reales), sin asumir
@@ -576,7 +579,7 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
                     "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
                     "score10": s["score10"], "info": s["info"],
                     "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
-                    "hub": s["hub"], "nhub": s.get("nhub", 0),
+                    "hub": s["hub"], "hub_dist": s.get("hub_dist"), "nhub": s.get("nhub", 0),
                     "pob": s["pob"], "nse": s["nse"], "cobertura": s["cov"],
                     "neto_pct": net_uncovered_pct_nal(z["lat"], z["lon"], kk),
                     "competidores": s["competidores"],

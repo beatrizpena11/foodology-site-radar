@@ -64,11 +64,13 @@ function renderCity(){
   // red propia
   CITY.network.forEach(p=>{
     const r=(p.radio_km||3.0)*1000;
-    const kpop=`<b>🍳 ${p.nombre}</b><br>Cocina activa · cobertura ${p.radio_km} km`;
-    L.circle([p.lat,p.lon],{radius:r,color:"#35C2B1",weight:1,opacity:.3,
-      fillColor:"#35C2B1",fillOpacity:.06}).addTo(ringLayer).bindPopup(kpop);
-    L.circleMarker([p.lat,p.lon],{radius:6,color:"#0E141B",weight:1.5,
-      fillColor:"#35C2B1",fillOpacity:1}).addTo(netLayer).bindPopup(kpop);
+    const col = p.fisica ? "#A78BFA" : "#35C2B1";  // morado = tienda fisica de calle
+    const tipo = p.fisica ? "Tienda física (calle)" : "Cocina / dark kitchen";
+    const kpop=`<b>${p.fisica?'🏪':'🍳'} ${p.nombre}</b><br>${tipo} · cobertura ${p.radio_km} km`;
+    L.circle([p.lat,p.lon],{radius:r,color:col,weight:1,opacity:.3,
+      fillColor:col,fillOpacity:.06}).addTo(ringLayer).bindPopup(kpop);
+    L.circleMarker([p.lat,p.lon],{radius:p.fisica?7:6,color:"#0E141B",weight:1.5,
+      fillColor:col,fillOpacity:1}).addTo(netLayer).bindPopup(kpop);
   });
   document.getElementById("netCount").textContent = CITY.network.length+" cocinas · "+CITY.gaps.length+" huecos";
   const modoTxt = (MODO==="fisico") ? "PUNTO FÍSICO" : "DELIVERY / DARK KITCHEN";
@@ -97,12 +99,12 @@ function renderCity(){
     const altTxt = (g.alternativas && g.alternativas.length)
       ? `<div class="alt">⚄ Compite con <b>${g.alternativas.join(", ")}</b> — abre solo UNA de estas</div>` : "";
     const grpTag = g.grupo ? `<span class="grp grp-${g.grupo%6}">⚄ grupo ${g.grupo}</span>` : "";
-    const knownTag = g._known ? `<span class="known-tag">★ tú lo agregaste</span>` : "";
+    const knownTag = "";
     const li=document.createElement("li");
     li.innerHTML=`
       <div class="ghead">
         <span class="rank">${String(i+1).padStart(2,"0")}</span>
-        <div class="gtitle"><span class="gname">${g.nombre}</span> ${knownTag} ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}
+        <div class="gtitle"><span class="gname">${g.nombre}</span> ${grpTag} ${g.hub?`<span class="turbo-tag">⚡Turbo ${g.hub_dist!=null?g.hub_dist+'km':''}</span>`:''}
           ${g.marca_sugerida?`<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span>`:""}</div>
         <span class="gscore">${g.score10!=null?g.score10:g.total}<small>/10</small></span>
         <span class="chev">▸</span>
@@ -228,12 +230,13 @@ document.querySelectorAll(".plan-btn").forEach(b=>{
     }catch(e){ box.innerHTML='<div class="plan-load">error, reintenta</div>'; }
   });
 });
-document.getElementById("planClear").addEventListener("click", ()=>{
+const _pc=document.getElementById("planClear");
+if(_pc){ _pc.addEventListener("click", ()=>{
   document.getElementById("planResult").innerHTML="";
-  document.getElementById("planClear").style.display="none";
+  _pc.style.display="none";
   document.querySelectorAll(".plan-btn").forEach(x=>x.classList.remove("on"));
   renderCity();
-});
+}); }
 
 function renderPlan(plan){
   const box=document.getElementById("planInner");

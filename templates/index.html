@@ -20,7 +20,6 @@
     <div class="modo-switch" id="modoSwitch">
       <button data-modo="fisico" class="on">Punto físico</button>
       <button data-modo="delivery">Delivery</button>
-      <button data-modo="plan">Plan</button>
     </div>
     <span class="mode mode-{{ modo|replace(' ','') }}">modo {{ modo }}</span>
     <span class="net-count" id="netCount"></span>
@@ -33,7 +32,10 @@
       <h2>Huecos detectados</h2>
       <p class="sub" id="gapSub">rankeados por score /12</p>
       <div id="planResult"></div>
-      <button id="glosBtn" class="glos-btn">📖 ¿Cómo se miden las métricas?</button>
+      <div class="btn-row">
+        <button id="planBtnTop" class="glos-btn">📍 Plan de expansión</button>
+        <button id="glosBtn" class="glos-btn">📖 ¿Cómo se miden?</button>
+      </div>
       <div id="glosario" class="glosario" style="display:none">
         <table class="glos-tbl">
           <tr><th>Métrica</th><th>Qué mide</th><th>Cómo se calcula</th></tr>

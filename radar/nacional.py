@@ -86,7 +86,7 @@ try:
     _HUBS = json.load(open(os.path.join(_DIR, "hubs_turbo.json"), encoding="utf-8"))
 except Exception:
     _HUBS = []
-def hub_cerca(lat, lon, radius_km=1.5):
+def hub_cerca(lat, lon, radius_km=1.0):
     for h in _HUBS:
         if _km(lat, lon, h["lat"], h["lon"]) <= radius_km: return True
     return False

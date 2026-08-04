@@ -31,12 +31,14 @@ _GAPS = {}   # cache por (ciudad, modo)
 def ciudad_default():
     return list(nacional.CIUDADES.keys())[0]
 
+_FISICAS = ["MANACAR","SAMARA","INTERLOMAS","INSURGENTES","NARVARTE","LONDRES"]
 def net_ciudad(cid):
     out = []
     for k in nacional.kitchens_ciudad(cid):
+        es_fisica = any(f in k["nombre"].upper() for f in _FISICAS)
         out.append({"nombre": k["nombre"], "marca": "", "tipo": "cocina",
                     "estatus": "activa", "lat": k["lat"], "lon": k["lon"],
-                    "radio_km": k["radio_km"]})
+                    "radio_km": k["radio_km"], "fisica": es_fisica})
     return out
 
 def _es_coord(nombre):

@@ -142,7 +142,7 @@ button:disabled{opacity:.5;cursor:wait}
 .chev{color:var(--muted);font-size:11px;transition:transform .15s;flex-shrink:0}
 li.open .chev{transform:rotate(90deg)}
 .gdetail{max-height:0;overflow:hidden;transition:max-height .22s ease;padding:0 4px 0 34px}
-li.open .gdetail{max-height:340px;padding-bottom:11px}
+li.open .gdetail{max-height:1200px;padding-bottom:11px}
 .gmapbtn{color:#35C2B1;font-size:11px;font-weight:600;cursor:pointer;margin-top:8px}
 .gmapbtn:hover{text-decoration:underline}
 
@@ -171,3 +171,5 @@ li.open .gdetail{max-height:340px;padding-bottom:11px}
 .glos-tbl th,.glos-tbl td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
 .glos-tbl th{background:#12211d;color:#35C2B1;font-size:10px}
 .glos-tbl td b{color:var(--text)}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.btn-row .glos-btn{margin-top:0;flex:1;font-size:11px}
