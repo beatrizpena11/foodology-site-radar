@@ -53,6 +53,8 @@ sel.addEventListener("change", async e=>{
 });
 
 function renderCity(){
+  if(!CITY.gaps) CITY.gaps=[];
+  if(!CITY.network) CITY.network=[];
   netLayer.clearLayers(); ringLayer.clearLayers(); gapLayer.clearLayers(); locMarkers.clearLayers();
 
   // red propia
@@ -245,8 +247,8 @@ function renderPlan(plan){
   box.innerHTML=html;
   if(plan.length){ const b=L.latLngBounds(plan.map(z=>[z.lat,z.lon])); map.fitBounds(b,{padding:[60,60],maxZoom:13}); }
 }
-renderCity();                 // pinta red al instante
-loadCityData(CITY.id, false); // trae los huecos en segundo plano
+try{ renderCity(); }catch(e){ console.error("render inicial:", e); }  // pinta red al instante
+loadCityData(CITY.id, true);  // trae los huecos (siempre)
 
 async function loadCityData(cid, recenter){
   const sub=document.getElementById("gapSub");

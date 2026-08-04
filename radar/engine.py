@@ -153,7 +153,7 @@ def discover_gaps(network, provider, cfg, scan_km=None, top=None):
             "neto_pct": net_uncovered_pct(la, lo, network, cfg),
             "marca_sugerida": marca, "porque": why, "nombre": None,
         })
-    out.sort(key=lambda z: z["total"], reverse=True)
+    out.sort(key=lambda z: z.get("score10", z["total"]), reverse=True)
     return (out if (top is None or top <= 0) else out[:top]), raw
 
 
@@ -490,7 +490,7 @@ def discover_fisico(cid, cfg):
                     "competidores": s["competidores"], "marca_sugerida": marca,
                     "_known": z.get("_known"),
                     "porque": "Area de nivel alto sin cocina propia; apta para punto fisico."})
-    out.sort(key=lambda z: z["total"], reverse=True)
+    out.sort(key=lambda z: z.get("score10", z["total"]), reverse=True)
     seen, ded = set(), []
     for z in out:
         if z["nombre"] in seen: continue
@@ -576,7 +576,7 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
                           for fl, fo in _fis_pts)]
     # dedup por nombre
     seen, ded = set(), []
-    for z in sorted(out, key=lambda x: (x["total"], x["neto_pct"]), reverse=True):
+    for z in sorted(out, key=lambda x: (x.get("score10", x["total"]), x["neto_pct"]), reverse=True):
         if z["nombre"] in seen: continue
         seen.add(z["nombre"]); ded.append(z)
     ded = _marcar_canibalizacion(ded)
