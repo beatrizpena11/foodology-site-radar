@@ -3,9 +3,31 @@ let CITY = window.__CITY__;
 let MODO = 'fisico';
 const cls = s => (s||"").replace(/ /g,".");
 const pill = (lbl,v)=>`<span class="s12"><b>${v}</b>${lbl}</span>`;
-const colorVal = v => v==="alto"?"#35C2B1":(v==="medio"?"#F2A63B":"#8695A6");
-const breakdown = g => (g.explica||[]).map(e=>
-  `<div class="exp"><span class="expv" style="color:${colorVal(e.valor)}">${e.valor.toUpperCase()} (${e.n}/3)</span> <b>${e.label}</b> — ${e.frase}</div>`).join("");
+function barra(v){ // v 0-10 -> barra de color
+  const col = v>=7?"#35C2B1":(v>=4?"#F2A63B":"#E4788C");
+  return `<div class="mbar"><div class="mbar-fill" style="width:${v*10}%;background:${col}"></div></div>`;
+}
+function metricRow(label, v, detalle){
+  return `<div class="metric">
+    <div class="metric-top"><b>${label}</b><span class="metric-num">${v}<small>/10</small></span></div>
+    ${barra(v)}
+    <div class="metric-det">${detalle||""}</div></div>`;
+}
+const breakdown = g => {
+  const info = g.info||{};
+  return metricRow("Demanda (consumo)", g.m_dem, info.demanda&&info.demanda.detalle)
+       + metricRow("Tráfico / entorno", g.m_traf, info.trafico&&info.trafico.detalle)
+       + metricRow("Nivel socioeconómico", g.m_niv, info.nivel&&info.nivel.detalle)
+       + metricRow("No te canibaliza", g.m_nc, info.nocanib&&info.nocanib.detalle);
+};
+function oportunidadHTML(op){
+  if(!op) return "";
+  return `<div class="oport">
+    <div class="oport-t">💰 Tamaño de oportunidad</div>
+    <div class="oport-main">~$${(op.gmv_estimado||0).toLocaleString()}<small>/mes</small> · ${op.ordenes_estimadas} órdenes/día</div>
+    <div class="oport-sub">Se parece a tu cocina <b>${op.cocina_parecida}</b> (${op.cocina_ordenes} ord/día, $${(op.cocina_gmv||0).toLocaleString()}/mes) · similitud ${op.similitud}/10</div>
+  </div>`;
+}
 
 const map = L.map("map",{zoomControl:true}).setView(CITY.centro, CITY.zoom);
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
@@ -75,11 +97,12 @@ function renderCity(){
         <span class="rank">${String(i+1).padStart(2,"0")}</span>
         <div class="gtitle"><span class="gname">${g.nombre}</span> ${grpTag} ${g.hub?'<span class="turbo-tag">⚡Turbo</span>':''}
           ${g.marca_sugerida?`<span class="chip ${cls(g.marca_sugerida)}">${g.marca_sugerida}</span>`:""}</div>
-        <span class="gscore">${g.total}<small>/12</small></span>
+        <span class="gscore">${g.score10!=null?g.score10:g.total}<small>/10</small></span>
         <span class="chev">▸</span>
       </div>
       <div class="gdetail">
         ${breakdown(g)}
+        ${oportunidadHTML(g.oportunidad)}
         <div class="gnet">hueco neto ${g.neto_pct}% · pob ~${(g.pob||0).toLocaleString()}</div>${altTxt}
         <div class="gmapbtn">Ver en el mapa →</div>
       </div>`;

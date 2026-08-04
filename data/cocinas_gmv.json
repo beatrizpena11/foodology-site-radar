@@ -1,0 +1,87 @@
+{
+  "POLANCO": {
+    "ordenes_dia": 451,
+    "gmv_mes": 3828202,
+    "ticket": 277
+  },
+  "DOCTORES": {
+    "ordenes_dia": 416,
+    "gmv_mes": 3537681,
+    "ticket": 277
+  },
+  "DEL VALLE": {
+    "ordenes_dia": 234,
+    "gmv_mes": 2001036,
+    "ticket": 279
+  },
+  "CHURUBUSCO": {
+    "ordenes_dia": 211,
+    "gmv_mes": 1821880,
+    "ticket": 282
+  },
+  "COAPA": {
+    "ordenes_dia": 210,
+    "gmv_mes": 1791884,
+    "ticket": 279
+  },
+  "SAN ANGEL": {
+    "ordenes_dia": 198,
+    "gmv_mes": 1702905,
+    "ticket": 281
+  },
+  "SANTA FE": {
+    "ordenes_dia": 161,
+    "gmv_mes": 1465877,
+    "ticket": 296
+  },
+  "LINDAVISTA": {
+    "ordenes_dia": 166,
+    "gmv_mes": 1407306,
+    "ticket": 277
+  },
+  "PEDREGAL": {
+    "ordenes_dia": 142,
+    "gmv_mes": 1271932,
+    "ticket": 291
+  },
+  "SATELITE": {
+    "ordenes_dia": 124,
+    "gmv_mes": 1150896,
+    "ticket": 303
+  },
+  "ESMERALDA": {
+    "ordenes_dia": 137,
+    "gmv_mes": 1136072,
+    "ticket": 290
+  },
+  "SAN JERONIMO": {
+    "ordenes_dia": 153,
+    "gmv_mes": 1127854,
+    "ticket": 240
+  },
+  "AZCAPOTZALCO": {
+    "ordenes_dia": 120,
+    "gmv_mes": 1016154,
+    "ticket": 275
+  },
+  "IZTAPALAPA": {
+    "ordenes_dia": 113,
+    "gmv_mes": 970025,
+    "ticket": 280
+  },
+  "MANACAR": {
+    "ordenes_dia": 93,
+    "gmv_mes": 623769,
+    "ticket": 220
+  },
+  "SAMARA": {
+    "ordenes_dia": 87,
+    "gmv_mes": 598480,
+    "ticket": 225
+  },
+  "INTERLOMAS": {
+    "ordenes_dia": 60,
+    "gmv_mes": 300809,
+    "ticket": 329
+  }
+}

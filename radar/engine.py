@@ -397,7 +397,30 @@ def scores12_nal(lat, lon, cid, city_kitchens, modo='delivery'):
             c_nc = 1              # zona normal dentro del alcance de una cocina -> canibaliza
     total = c_dem + c_traf + c_niv + c_nc
     hub = nhub >= 1
+
+    # ===== ESCALA 0-10 por metrica (mas fina) + info cruda de soporte =====
+    dcloser = min(((haversine_km(lat, lon, k["lat"], k["lon"]), k["nombre"]) for k in city_kitchens),
+                  default=(99, "ninguna"))
+    m_dem = round(min(10.0, dem_ord * 10), 1)                    # demanda 0-10
+    m_traf = round(min(10.0, tsig * 10), 1)                       # trafico 0-10
+    m_niv = round(min(10.0, max(0.0, (nse - 0.45) / 0.50 * 10)), 1)  # nivel 0-10 (nse 0.45-0.95)
+    m_nc = round(max(0.0, (1 - cov) * 10), 1)                    # no-canib 0-10 (49% cov -> 5.1)
+    # ordenes Rappi 8sem crudas de la zona
+    ordenes_rappi = nacional.rappi_orders_at(lat, lon, cid) if hasattr(nacional, "rappi_orders_at") else None
+    info = {
+        "demanda": {"score10": m_dem,
+                    "detalle": f"{int(ordenes_rappi):,} órdenes Rappi/8sem en la zona".replace(",", ",") if ordenes_rappi else f"densidad de pedidos {dem_ord:.0%} vs zona top"},
+        "trafico": {"score10": m_traf,
+                    "detalle": f"{cen['pob']:,} hab · {nhub} hubs turbo · {ci['marcas']} restaurantes parecidos cerca"},
+        "nivel": {"score10": m_niv,
+                  "detalle": f"nivel socioeconómico {nse:.2f}/1.0 (INEGI), estrato {cen.get('estrato','?')}"},
+        "nocanib": {"score10": m_nc,
+                    "detalle": f"{cov:.0%} de la zona ya cubierta · cocina más cercana: {dcloser[1]} a {dcloser[0]:.1f} km"},
+    }
     return {"c_dem": c_dem, "c_traf": c_traf, "c_niv": c_niv, "c_nc": c_nc,
+            "m_dem": m_dem, "m_traf": m_traf, "m_niv": m_niv, "m_nc": m_nc,
+            "score10": round((m_dem + m_traf + m_niv + m_nc) / 4, 1),
+            "info": info,
             "total": total, "rank": total + (0.3 if hub else 0),
             "hub": hub, "nhub": nhub, "dem": round(dem_ord, 2), "cov": round(cov, 2),
             "pob": cen["pob"], "nse": nse, "competidores": ci["lista"],
@@ -458,6 +481,8 @@ def discover_fisico(cid, cfg):
                     "_modo": "fisico", "nhub": s["nhub"],
                     "total": s["total"], "c_dem": s["c_dem"], "c_traf": s["c_traf"],
                     "c_niv": s["c_niv"], "c_nc": s["c_nc"],
+                    "m_dem": s["m_dem"], "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
+                    "score10": s["score10"], "info": s["info"],
                     "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
                     "hub": s["hub"], "pob": z["pob"], "nse": round(nse, 3),
                     "cobertura": s["cov"], "neto_pct": net_uncovered_pct_nal(la, lo, kk),
@@ -531,6 +556,8 @@ def discover_gaps_ciudad(cid, cfg, modo='delivery'):
         out.append({"lat": z["lat"], "lon": z["lon"], "nombre": nombre,
                     "total": s["total"], "c_dem": s["c_dem"], "c_traf": s["c_traf"],
                     "c_niv": s["c_niv"], "c_nc": s["c_nc"],
+                    "m_dem": s["m_dem"], "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
+                    "score10": s["score10"], "info": s["info"],
                     "ft": s["ft"], "pop": s["pop"], "comp": s["comp"], "canib": s["canib"],
                     "hub": s["hub"], "nhub": s.get("nhub", 0),
                     "pob": s["pob"], "nse": s["nse"], "cobertura": s["cov"],
@@ -572,3 +599,53 @@ def net_uncovered_pct_nal(lat, lon, city_kitchens, radius_km=4.0, n=200):
         dlat = rr/111.0*math.cos(ang); dlon = rr/(111.0*math.cos(math.radians(lat)))*math.sin(ang)
         if nacional.coverage_at(lat+dlat, lon+dlon, city_kitchens) < 0.2: unc += 1
     return round(100*unc/n)
+
+
+# ============ EVALUAR COCINAS ACTUALES + TAMAÑO DE OPORTUNIDAD ============
+import json as _json, os as _os
+try:
+    _GMV = _json.load(open(_os.path.join(_os.path.dirname(__file__), "..", "data", "cocinas_gmv.json"), encoding="utf-8"))
+except Exception:
+    _GMV = {}
+
+def _gmv_match(nombre):
+    """Cruza el nombre de la cocina (kitchens_geo) con los datos de GMV del warehouse."""
+    n = nombre.upper()
+    for k, v in _GMV.items():
+        if k in n or n in k or k.split()[0] in n:
+            return v
+    return None
+
+def evaluar_cocinas(cid, cfg):
+    """Evalua cada cocina actual con las 4 metricas /10 + su GMV/ordenes reales."""
+    from . import nacional
+    kk = nacional.kitchens_ciudad(cid)
+    out = []
+    for k in kk:
+        s = scores12_nal(k["lat"], k["lon"], cid, kk, "fisico")
+        gmv = _gmv_match(k["nombre"])
+        out.append({"nombre": k["nombre"], "lat": k["lat"], "lon": k["lon"],
+                    "m_dem": s["m_dem"], "m_traf": s["m_traf"], "m_niv": s["m_niv"], "m_nc": s["m_nc"],
+                    "gmv_mes": gmv["gmv_mes"] if gmv else None,
+                    "ordenes_dia": gmv["ordenes_dia"] if gmv else None,
+                    "ticket": gmv["ticket"] if gmv else None})
+    return out
+
+def tamano_oportunidad(hueco, cocinas):
+    """Encuentra la cocina mas PARECIDA al hueco (por las 4 metricas) y estima
+    el tamaño de oportunidad usando su GMV/ordenes reales."""
+    con_gmv = [c for c in cocinas if c.get("gmv_mes")]
+    if not con_gmv:
+        return None
+    def dist(c):
+        return ((hueco["m_dem"]-c["m_dem"])**2 + (hueco["m_traf"]-c["m_traf"])**2
+                + (hueco["m_niv"]-c["m_niv"])**2)**0.5   # sin no-canib (esa es del hueco)
+    similar = min(con_gmv, key=dist)
+    # ajuste por demanda relativa (si el hueco tiene mas/menos demanda que la cocina parecida)
+    factor = (hueco["m_dem"] + 1) / (similar["m_dem"] + 1)
+    factor = max(0.5, min(1.5, factor))
+    return {"cocina_parecida": similar["nombre"],
+            "gmv_estimado": int(similar["gmv_mes"] * factor),
+            "ordenes_estimadas": int(similar["ordenes_dia"] * factor),
+            "cocina_gmv": similar["gmv_mes"], "cocina_ordenes": similar["ordenes_dia"],
+            "similitud": round(10 - min(10, dist(similar)*1.5), 1)}

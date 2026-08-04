@@ -173,6 +173,25 @@ def _rappi_scale(cid):
     _RAPPI_SCALE[cid] = sc or 1.0
     return _RAPPI_SCALE[cid]
 
+
+
+def rappi_orders_at(lat, lon, cid=None):
+    """Ordenes crudas (8 semanas) de la zona Rappi que contiene el punto."""
+    if not _RAPPI_POLY:
+        return None
+    pt = Point(lon, lat)
+    for z in _RAPPI_POLY:
+        try:
+            if z["poly"].contains(pt):
+                return z["orders"]
+        except Exception:
+            pass
+    best, bd = None, 2.0
+    for z in _RAPPI_POLY:
+        d = _km(lat, lon, z["clat"], z["clon"])
+        if d < bd: bd, best = d, z["orders"]
+    return best
+
 def demand_rappi_at(lat, lon, cid):
     """Demanda real de delivery (ordenes Rappi por zona, map 4), normalizada 0-1."""
     if not _RAPPI_POLY:

@@ -10,7 +10,7 @@ if os.path.exists(_envfile):
 from flask import Flask, render_template, request, jsonify
 import yaml
 from radar.providers import get_provider
-from radar.engine import discover_gaps_ciudad, score_locales, plan_cobertura
+from radar.engine import discover_gaps_ciudad, score_locales, plan_cobertura, evaluar_cocinas, tamano_oportunidad
 from radar import nacional
 from radar import apify_locales
 import urllib.request as _urlreq
@@ -56,6 +56,13 @@ def gaps_ciudad(cid, modo="delivery"):
                             z["nombre"] = nm
                     except Exception as e:
                         print("reverse name error:", e)
+            # tamaño de oportunidad: comparar cada hueco con cocinas reales
+            try:
+                _coc = evaluar_cocinas(cid, CFG)
+                for z in g:
+                    z["oportunidad"] = tamano_oportunidad(z, _coc)
+            except Exception as e:
+                print("oportunidad error:", e)
             _GAPS[key] = g
         except Exception as e:
             print("error huecos", cid, modo, e); _GAPS[key] = []
@@ -105,6 +112,12 @@ def api_plan(cid):
                 if nm and not _es_coord(nm): z["nombre"] = nm
             except Exception: pass
     return jsonify({"plan": plan, "n": n, "modo": modo})
+
+@app.route("/api/cocinas/<cid>")
+def api_cocinas(cid):
+    if cid not in nacional.CIUDADES:
+        return jsonify({"error": "ciudad desconocida"}), 404
+    return jsonify({"cocinas": evaluar_cocinas(cid, CFG)})
 
 @app.route("/api/score", methods=["POST"])
 def api_score():
